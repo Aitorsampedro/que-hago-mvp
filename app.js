@@ -1,12 +1,15 @@
 // app.js (ES module)
 
+// Importar helpers de Firebase
+import { getAllPlanes, addPlanToApi } from "./firebase-config.js";
+
 // =============================
 //   Configuración general
 // =============================
 
 const STORAGE_KEY = "qhago:planes:v1";
 
-// Planes iniciales de ejemplo
+// Planes iniciales de ejemplo (solo para modo local)
 const DEFAULT_PLANS = [
   {
     id: "mock-1",
@@ -60,7 +63,7 @@ function normalizePlan(raw) {
     ciudad: (raw.ciudad || "").trim(),
     fecha,
     hora,
-    minimo: tryParseInt(raw.minimo, 1),
+    minimo: tryParseInt(raw.minimo, null),
     maximo: tryParseInt(raw.maximo, null),
     enlace: (raw.enlace || "").trim(),
     createdAt: raw.createdAt || new Date().toISOString(),
@@ -80,7 +83,7 @@ function sortPlans(plansList) {
 }
 
 // =============================
-//   localStorage
+//   localStorage (modo local)
 // =============================
 
 function loadFromStorage() {
@@ -160,8 +163,8 @@ function sharePlanByWhatsApp(plan) {
 // =============================
 
 document.addEventListener("DOMContentLoaded", () => {
-  // ---- Referencias DOM ----
   const body = document.body;
+  const apiMode = body.dataset.apiMode === "api";
 
   // Formulario crear plan
   const form = document.getElementById("plan-form");
@@ -193,26 +196,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const apiStatus = document.getElementById("api-status");
   const btnRecargar = document.getElementById("btn-recargar");
 
-  // -------------------------
-  // Inicialización
-  // -------------------------
-
-  // Opcional: limitar fechas mínimas al día actual
+  // limitar fecha mínima al día actual
   const today = new Date().toISOString().slice(0, 10);
   if (inputFecha) inputFecha.min = today;
   if (filtroFecha) filtroFecha.min = today;
-
-  // Estado inicial: localStorage > mocks
-  const stored = loadFromStorage();
-  if (stored.length > 0) {
-    plans = sortPlans(stored);
-  } else {
-    plans = sortPlans(DEFAULT_PLANS);
-    saveToStorage(plans);
-  }
-
-  // Modo API (preparado para Firebase / similar)
-  const apiMode = body.dataset.apiMode || "local"; // local | api
 
   // -------------------------
   // Render de planes
@@ -382,120 +369,126 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  if (form) {
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-      clearFormMessages();
+  async function handleCreatePlan(e) {
+    e.preventDefault();
+    clearFormMessages();
 
-      const raw = {
-        titulo: inputTitulo?.value,
-        descripcion: inputDescripcion?.value,
-        provincia: selectProvincia?.value,
-        ciudad: inputCiudad?.value,
-        fecha: inputFecha?.value,
-        hora: inputHora?.value,
-        minimo: inputMinimo?.value,
-        maximo: inputMaximo?.value,
-        enlace: inputEnlace?.value,
-      };
+    const raw = {
+      titulo: inputTitulo?.value,
+      descripcion: inputDescripcion?.value,
+      provincia: selectProvincia?.value,
+      ciudad: inputCiudad?.value,
+      fecha: inputFecha?.value,
+      hora: inputHora?.value,
+      minimo: inputMinimo?.value,
+      maximo: inputMaximo?.value,
+      enlace: inputEnlace?.value,
+    };
 
-      // Validaciones simples (además de required HTML)
-      if (!raw.titulo || !raw.provincia || !raw.ciudad || !raw.fecha || !raw.enlace) {
-        showError("Rellena todos los campos obligatorios marcados con *.");
-        return;
+    if (!raw.titulo || !raw.provincia || !raw.ciudad || !raw.fecha || !raw.enlace) {
+      showError("Rellena todos los campos obligatorios marcados con *.");
+      return;
+    }
+
+    const min = tryParseInt(raw.minimo, null);
+    const max = tryParseInt(raw.maximo, null);
+    if (min !== null && max !== null && max < min) {
+      showError("El máximo de personas no puede ser menor que el mínimo.");
+      return;
+    }
+
+    if (!/^https?:\/\//i.test(raw.enlace)) {
+      raw.enlace = `https://${raw.enlace}`;
+    }
+
+    const newPlan = normalizePlan({
+      ...raw,
+      source: apiMode ? "api-local" : "local",
+    });
+
+    try {
+      if (apiMode) {
+        if (apiStatus) apiStatus.textContent = "Guardando plan en la nube...";
+        const newId = await addPlanToApi(newPlan);
+        newPlan.id = newId;
+        if (apiStatus) apiStatus.textContent = "Plan guardado en la nube.";
+      } else {
+        plans.unshift(newPlan);
+        saveToStorage(plans);
       }
 
-      // Validar mín/máx coherentes
-      const min = tryParseInt(raw.minimo, null);
-      const max = tryParseInt(raw.maximo, null);
-      if (min !== null && max !== null && max < min) {
-        showError("El máximo de personas no puede ser menor que el mínimo.");
-        return;
-      }
+      plans = sortPlans(
+        apiMode ? [...plans, newPlan] : plans
+      );
 
-      // Validar enlace por encima de lo básico
-      if (!/^https?:\/\//i.test(raw.enlace)) {
-        // No es crítico, pero ayuda
-        raw.enlace = `https://${raw.enlace}`;
-      }
-
-      const newPlan = normalizePlan({
-        ...raw,
-        source: apiMode === "api" ? "api-local" : "local",
-      });
-
-      plans.unshift(newPlan);
-      plans = sortPlans(plans);
-      saveToStorage(plans);
       form.reset();
-      clearFormMessages();
       showSuccess("Plan publicado correctamente. Ya aparece en la lista de planes.");
       applyFilters();
-    });
+    } catch (err) {
+      console.error(err);
+      showError("Error al guardar el plan. Inténtalo de nuevo en unos segundos.");
+      if (apiStatus) apiStatus.textContent = "Error al guardar en la API.";
+    }
   }
 
   // -------------------------
-  // API / Recarga (stub)
+  // API: recargar desde Firestore
   // -------------------------
 
-  async function reloadFromApiStub() {
+  async function reloadFromApi() {
     if (!apiStatus) return;
-    apiStatus.textContent =
-      apiMode === "api"
-        ? "Intentando recargar desde la API (no conectada aún)..."
-        : "Modo local: recargando datos de prueba desde el navegador...";
+    apiStatus.textContent = "Cargando planes desde la API...";
 
-    // Aquí, cuando conectes Firebase / API:
-    // - harás fetch/lectura
-    // - normalizarás los planes
-    // - los combinarás con los locales o los sustituirás
-
-    // De momento: simplemente volvemos a leer de localStorage + mocks
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const storedAgain = loadFromStorage();
-        if (storedAgain.length > 0) {
-          plans = sortPlans(storedAgain);
-        } else {
-          plans = sortPlans(DEFAULT_PLANS);
-          saveToStorage(plans);
-        }
-        applyFilters();
-        apiStatus.textContent =
-          apiMode === "api"
-            ? "API todavía no conectada. Usando datos locales."
-            : "Datos recargados desde almacenamiento local.";
-        resolve();
-      }, 500);
-    });
+    try {
+      const apiPlans = await getAllPlanes();
+      plans = sortPlans(apiPlans.map(normalizePlan));
+      apiStatus.textContent = `Cargados ${plans.length} planes desde la API.`;
+      applyFilters();
+    } catch (err) {
+      console.error(err);
+      apiStatus.textContent =
+        "Error al cargar desde la API. Revisa la conexión o las reglas de Firestore.";
+    }
   }
+
+  // -------------------------
+  // Listeners
+  // -------------------------
+
+  if (form) {
+    form.addEventListener("submit", handleCreatePlan);
+  }
+
+  if (filtroProvincia) filtroProvincia.addEventListener("change", applyFilters);
+  if (filtroFecha) filtroFecha.addEventListener("change", applyFilters);
+  if (filtroBusqueda) filtroBusqueda.addEventListener("input", applyFilters);
+  if (btnLimpiarFiltros) btnLimpiarFiltros.addEventListener("click", resetFilters);
 
   if (btnRecargar) {
     btnRecargar.addEventListener("click", () => {
-      reloadFromApiStub();
+      if (apiMode) reloadFromApi();
+      else {
+        const storedAgain = loadFromStorage();
+        plans = storedAgain.length ? storedAgain : DEFAULT_PLANS.map(normalizePlan);
+        plans = sortPlans(plans);
+        if (apiStatus) apiStatus.textContent = "Datos recargados desde almacenamiento local.";
+        applyFilters();
+      }
     });
   }
 
   // -------------------------
-  // Listeners de filtros
+  // Carga inicial
   // -------------------------
 
-  if (filtroProvincia) {
-    filtroProvincia.addEventListener("change", applyFilters);
-  }
-  if (filtroFecha) {
-    filtroFecha.addEventListener("change", applyFilters);
-  }
-  if (filtroBusqueda) {
-    filtroBusqueda.addEventListener("input", applyFilters);
-  }
-  if (btnLimpiarFiltros) {
-    btnLimpiarFiltros.addEventListener("click", resetFilters);
-  }
-
-  // -------------------------
-  // Render inicial
-  // -------------------------
-
-  applyFilters();
+  (async function init() {
+    if (apiMode) {
+      await reloadFromApi();
+    } else {
+      const stored = loadFromStorage();
+      plans = stored.length ? stored : DEFAULT_PLANS.map(normalizePlan);
+      plans = sortPlans(plans);
+      applyFilters();
+    }
+  })();
 });
