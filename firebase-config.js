@@ -6,6 +6,9 @@ import {
   getDocs,
   addDoc,
   serverTimestamp,
+  onSnapshot,
+  query,
+  orderBy,
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -20,13 +23,15 @@ const firebaseConfig = {
 // Inicializar Firebase
 export const app = initializeApp(firebaseConfig);
 
-// Firestore
+// Firestore + colección
 const db = getFirestore(app);
 const planesCol = collection(db, "planes");
 
-// Leer todos los planes de Firestore
+// Leer todos los planes UNA VEZ (para recarga manual)
 export async function getAllPlanes() {
-  const snapshot = await getDocs(planesCol);
+  const q = query(planesCol, orderBy("fecha"), orderBy("createdAt", "asc"));
+  const snapshot = await getDocs(q);
+
   return snapshot.docs.map((doc) => {
     const data = doc.data();
     return {
@@ -65,4 +70,43 @@ export async function addPlanToApi(plan) {
   });
 
   return docRef.id;
+}
+
+// Suscripción en tiempo real a la colección "planes"
+export function subscribeToPlanes(callback) {
+  const q = query(planesCol, orderBy("fecha"), orderBy("createdAt", "asc"));
+
+  const unsubscribe = onSnapshot(
+    q,
+    (snapshot) => {
+      const planes = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          titulo: data.titulo || "",
+          descripcion: data.descripcion || "",
+          provincia: data.provincia || "",
+          ciudad: data.ciudad || "",
+          fecha: data.fecha || "",
+          hora: data.hora || "",
+          minimo: data.minimo ?? null,
+          maximo: data.maximo ?? null,
+          enlace: data.enlace || "",
+          createdAt:
+            data.createdAt && data.createdAt.toDate
+              ? data.createdAt.toDate().toISOString()
+              : null,
+          source: "api",
+        };
+      });
+
+      callback(planes);
+    },
+    (error) => {
+      console.error("Error en suscripción de planes:", error);
+      callback(null, error);
+    }
+  );
+
+  return unsubscribe;
 }

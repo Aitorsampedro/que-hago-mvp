@@ -1,7 +1,11 @@
-// app.js (ES module)
+// app.js (versión completa con TIEMPO REAL)
 
-// Importar helpers de Firebase
-import { getAllPlanes, addPlanToApi } from "./firebase-config.js";
+// Importar helpers de Firebase (incluye subscribeToPlanes)
+import {
+  getAllPlanes,
+  addPlanToApi,
+  subscribeToPlanes
+} from "./firebase-config.js";
 
 // =============================
 //   Configuración general
@@ -9,7 +13,6 @@ import { getAllPlanes, addPlanToApi } from "./firebase-config.js";
 
 const STORAGE_KEY = "qhago:planes:v1";
 
-// Planes iniciales de ejemplo (solo para modo local)
 const DEFAULT_PLANS = [
   {
     id: "mock-1",
@@ -41,7 +44,8 @@ const DEFAULT_PLANS = [
   },
 ];
 
-let plans = []; // estado en memoria
+let plans = [];
+let unsubscribeFromPlans = null;
 
 // =============================
 //   Utilidades
@@ -53,16 +57,14 @@ function tryParseInt(value, fallback = null) {
 }
 
 function normalizePlan(raw) {
-  const fecha = raw.fecha || "";
-  const hora = raw.hora || "";
   return {
     id: raw.id || `local-${crypto.randomUUID?.() || Date.now()}`,
     titulo: (raw.titulo || "").trim(),
     descripcion: (raw.descripcion || "").trim(),
     provincia: (raw.provincia || "").trim(),
     ciudad: (raw.ciudad || "").trim(),
-    fecha,
-    hora,
+    fecha: raw.fecha || "",
+    hora: raw.hora || "",
     minimo: tryParseInt(raw.minimo, null),
     maximo: tryParseInt(raw.maximo, null),
     enlace: (raw.enlace || "").trim(),
@@ -93,32 +95,27 @@ function loadFromStorage() {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
     return parsed.map(normalizePlan);
-  } catch (err) {
-    console.warn("Error leyendo localStorage:", err);
+  } catch {
     return [];
   }
 }
 
 function saveToStorage(plansList) {
-  try {
-    const clean = plansList.map((p) => ({
-      id: p.id,
-      titulo: p.titulo,
-      descripcion: p.descripcion,
-      provincia: p.provincia,
-      ciudad: p.ciudad,
-      fecha: p.fecha,
-      hora: p.hora,
-      minimo: p.minimo,
-      maximo: p.maximo,
-      enlace: p.enlace,
-      createdAt: p.createdAt,
-      source: p.source,
-    }));
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(clean));
-  } catch (err) {
-    console.warn("Error guardando en localStorage:", err);
-  }
+  const clean = plansList.map((p) => ({
+    id: p.id,
+    titulo: p.titulo,
+    descripcion: p.descripcion,
+    provincia: p.provincia,
+    ciudad: p.ciudad,
+    fecha: p.fecha,
+    hora: p.hora,
+    minimo: p.minimo,
+    maximo: p.maximo,
+    enlace: p.enlace,
+    createdAt: p.createdAt,
+    source: p.source,
+  }));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(clean));
 }
 
 // =============================
@@ -126,22 +123,19 @@ function saveToStorage(plansList) {
 // =============================
 
 function buildWhatsAppMessage(plan) {
-  const fechaText = plan.fecha ? plan.fecha : "Fecha por concretar";
-  const horaText = plan.hora ? ` a las ${plan.hora}` : "";
-  const personasText =
-    plan.minimo && plan.maximo
-      ? `${plan.minimo}-${plan.maximo} personas`
-      : plan.minimo
-      ? `Desde ${plan.minimo} personas`
-      : plan.maximo
-      ? `Hasta ${plan.maximo} personas`
-      : "Personas por concretar";
-
   return [
     `Plan: ${plan.titulo}`,
-    `Cuándo: ${fechaText}${horaText}`,
+    `Cuándo: ${plan.fecha}${plan.hora ? " a las " + plan.hora : ""}`,
     `Dónde: ${plan.ciudad} (${plan.provincia})`,
-    `Personas: ${personasText}`,
+    `Personas: ${
+      plan.minimo && plan.maximo
+        ? `${plan.minimo}-${plan.maximo}`
+        : plan.minimo
+        ? `Desde ${plan.minimo}`
+        : plan.maximo
+        ? `Hasta ${plan.maximo}`
+        : "Por concretar"
+    }`,
     "",
     plan.descripcion,
     "",
@@ -151,249 +145,158 @@ function buildWhatsAppMessage(plan) {
     .join("\n");
 }
 
-function sharePlanByWhatsApp(plan) {
-  const text = buildWhatsAppMessage(plan);
-  const encoded = encodeURIComponent(text);
-  const url = `https://wa.me/?text=${encoded}`;
-  window.open(url, "_blank", "noopener,noreferrer");
+function sharePlan(plan) {
+  const text = encodeURIComponent(buildWhatsAppMessage(plan));
+  window.open(`https://wa.me/?text=${text}`, "_blank");
 }
 
 // =============================
-//   DOM + lógica principal
+//   DOM
 // =============================
 
 document.addEventListener("DOMContentLoaded", () => {
   const body = document.body;
   const apiMode = body.dataset.apiMode === "api";
 
-  // Formulario crear plan
+  // ---- Form ----
   const form = document.getElementById("plan-form");
-  const inputTitulo = document.getElementById("titulo");
-  const inputDescripcion = document.getElementById("descripcion");
-  const selectProvincia = document.getElementById("provincia");
-  const inputCiudad = document.getElementById("ciudad");
-  const inputFecha = document.getElementById("fecha");
-  const inputHora = document.getElementById("hora");
-  const inputMinimo = document.getElementById("minimo");
-  const inputMaximo = document.getElementById("maximo");
-  const inputEnlace = document.getElementById("enlace");
+  const titulo = document.getElementById("titulo");
+  const descripcion = document.getElementById("descripcion");
+  const provincia = document.getElementById("provincia");
+  const ciudad = document.getElementById("ciudad");
+  const fecha = document.getElementById("fecha");
+  const hora = document.getElementById("hora");
+  const minimo = document.getElementById("minimo");
+  const maximo = document.getElementById("maximo");
+  const enlace = document.getElementById("enlace");
+
   const formError = document.getElementById("form-error");
   const formSuccess = document.getElementById("form-success");
 
-  // Filtros
-  const filtroProvincia = document.getElementById("filtro-provincia");
-  const filtroFecha = document.getElementById("filtro-fecha");
-  const filtroBusqueda = document.getElementById("filtro-busqueda");
-  const btnLimpiarFiltros = document.getElementById("btn-limpiar-filtros");
-
-  // Planes / lista
+  // ---- Lista ----
   const list = document.getElementById("plan-list");
   const template = document.getElementById("plan-card-template");
   const emptyState = document.getElementById("empty-state");
   const resultsCount = document.getElementById("results-count");
 
-  // API
+  // ---- Filtros ----
+  const filtroProvincia = document.getElementById("filtro-provincia");
+  const filtroFecha = document.getElementById("filtro-fecha");
+  const filtroBusqueda = document.getElementById("filtro-busqueda");
+  const btnLimpiar = document.getElementById("btn-limpiar-filtros");
+
+  // ---- API status ----
   const apiStatus = document.getElementById("api-status");
   const btnRecargar = document.getElementById("btn-recargar");
 
-  // limitar fecha mínima al día actual
-  const today = new Date().toISOString().slice(0, 10);
-  if (inputFecha) inputFecha.min = today;
-  if (filtroFecha) filtroFecha.min = today;
+  // =============================
+  //   Render de planes
+  // =============================
 
-  // -------------------------
-  // Render de planes
-  // -------------------------
-
-  function renderPlans(filteredPlans) {
+  function renderPlans(planesFiltrados) {
     list.innerHTML = "";
 
-    const total = filteredPlans.length;
+    const total = planesFiltrados.length;
     const totalGlobal = plans.length;
 
     if (resultsCount) {
       if (!totalGlobal) {
-        resultsCount.textContent = "No hay ningún plan creado todavía.";
-      } else if (!total) {
-        resultsCount.textContent = `0 planes con estos filtros (${totalGlobal} en total).`;
-      } else if (total === totalGlobal) {
-        resultsCount.textContent = `${total} planes disponibles.`;
+        resultsCount.textContent = "No hay planes todavía.";
       } else {
-        resultsCount.textContent = `${total} planes con estos filtros de ${totalGlobal} en total.`;
+        resultsCount.textContent = `${total} planes filtrados de ${totalGlobal}`;
       }
     }
 
     if (total === 0) {
-      if (emptyState) emptyState.hidden = false;
+      emptyState.hidden = false;
       return;
     }
-    if (emptyState) emptyState.hidden = true;
+    emptyState.hidden = true;
 
-    filteredPlans.forEach((plan) => {
+    planesFiltrados.forEach((plan) => {
       const node = template.content.cloneNode(true);
-      const article = node.querySelector(".plan");
-      const title = node.querySelector(".plan-title");
-      const badgeProvince = node.querySelector(".badge-province");
-      const badgeCity = node.querySelector(".badge-city");
+
+      node.querySelector(".plan-title").textContent = plan.titulo;
+      node.querySelector(".badge-province").textContent = plan.provincia;
+      node.querySelector(".badge-city").textContent = plan.ciudad;
+      node.querySelector(".plan-description").textContent = plan.descripcion;
+      node.querySelector(".plan-date").textContent = plan.fecha;
+      node.querySelector(".plan-time").textContent = plan.hora || "";
+
       const badgePeople = node.querySelector(".badge-people");
-      const desc = node.querySelector(".plan-description");
-      const dateSpan = node.querySelector(".plan-date");
-      const timeSpan = node.querySelector(".plan-time");
-      const joinLink = node.querySelector(".btn-join");
-      const shareBtn = node.querySelector(".btn-share");
+      badgePeople.textContent =
+        plan.minimo && plan.maximo
+          ? `${plan.minimo}-${plan.maximo} personas`
+          : plan.minimo
+          ? `Desde ${plan.minimo} personas`
+          : plan.maximo
+          ? `Hasta ${plan.maximo} personas`
+          : "Personas por concretar";
 
-      if (article) {
-        article.dataset.planId = plan.id;
-      }
+      const joinBtn = node.querySelector(".btn-join");
+      joinBtn.href = plan.enlace;
 
-      if (title) title.textContent = plan.titulo || "Plan sin título";
-      if (badgeProvince) badgeProvince.textContent = plan.provincia || "Provincia";
-      if (badgeCity) badgeCity.textContent = plan.ciudad || "Ubicación";
-      if (badgePeople) {
-        const minimo = plan.minimo ?? null;
-        const maximo = plan.maximo ?? null;
-        let label = "Personas por concretar";
-        if (minimo && maximo) label = `${minimo}-${maximo} personas`;
-        else if (minimo) label = `Desde ${minimo} personas`;
-        else if (maximo) label = `Hasta ${maximo} personas`;
-        badgePeople.textContent = label;
-      }
-
-      if (desc) desc.textContent = plan.descripcion || "";
-
-      if (dateSpan) {
-        dateSpan.textContent = plan.fecha ? `Fecha: ${plan.fecha}` : "Fecha por concretar";
-      }
-
-      if (timeSpan) {
-        timeSpan.textContent = plan.hora ? `Hora: ${plan.hora}` : "";
-      }
-
-      if (joinLink) {
-        const href =
-          plan.enlace && /^https?:\/\//i.test(plan.enlace)
-            ? plan.enlace
-            : plan.enlace
-            ? `https://${plan.enlace}`
-            : "#";
-
-        joinLink.href = href;
-        if (!plan.enlace) {
-          joinLink.classList.add("btn-secondary");
-          joinLink.textContent = "Sin enlace todavía";
-          joinLink.removeAttribute("target");
-        }
-      }
-
-      if (shareBtn) {
-        shareBtn.addEventListener("click", () => {
-          sharePlanByWhatsApp(plan);
-        });
-      }
+      node.querySelector(".btn-share").addEventListener("click", () =>
+        sharePlan(plan)
+      );
 
       list.appendChild(node);
     });
   }
 
-  // -------------------------
-  // Filtros
-  // -------------------------
+  // =============================
+  //   Filtros
+  // =============================
 
   function applyFilters() {
-    const provSel = filtroProvincia?.value || "todas";
-    const fechaSel = filtroFecha?.value || "";
-    const text = (filtroBusqueda?.value || "").trim().toLowerCase();
+    const prov = filtroProvincia.value;
+    const day = filtroFecha.value;
+    const text = filtroBusqueda.value.toLowerCase();
 
-    const filtered = plans.filter((p) => {
-      if (provSel !== "todas" && p.provincia !== provSel) return false;
-      if (fechaSel && p.fecha !== fechaSel) return false;
-
-      if (text) {
-        const haystack = [
-          p.titulo,
-          p.descripcion,
-          p.provincia,
-          p.ciudad,
-          p.fecha,
-        ]
-          .join(" ")
-          .toLowerCase();
-        if (!haystack.includes(text)) return false;
-      }
-
+    const filtrados = plans.filter((p) => {
+      if (prov !== "todas" && p.provincia !== prov) return false;
+      if (day && p.fecha !== day) return false;
+      if (
+        text &&
+        !`${p.titulo} ${p.descripcion} ${p.ciudad} ${p.provincia}`
+          .toLowerCase()
+          .includes(text)
+      )
+        return false;
       return true;
     });
 
-    renderPlans(filtered);
+    renderPlans(filtrados);
   }
 
-  function resetFilters() {
-    if (filtroProvincia) filtroProvincia.value = "todas";
-    if (filtroFecha) filtroFecha.value = "";
-    if (filtroBusqueda) filtroBusqueda.value = "";
-    applyFilters();
+  // =============================
+  //   Form submit
+  // =============================
+
+  function clearMessages() {
+    formError.style.display = "none";
+    formSuccess.style.display = "none";
   }
 
-  // -------------------------
-  // Formulario: crear plan
-  // -------------------------
-
-  function clearFormMessages() {
-    if (formError) {
-      formError.textContent = "";
-      formError.style.display = "none";
-    }
-    if (formSuccess) {
-      formSuccess.textContent = "";
-      formSuccess.style.display = "none";
-    }
-  }
-
-  function showError(msg) {
-    if (!formError) return;
-    formError.textContent = msg;
-    formError.style.display = "block";
-    if (formSuccess) {
-      formSuccess.textContent = "";
-      formSuccess.style.display = "none";
-    }
-  }
-
-  function showSuccess(msg) {
-    if (!formSuccess) return;
-    formSuccess.textContent = msg;
-    formSuccess.style.display = "block";
-    if (formError) {
-      formError.textContent = "";
-      formError.style.display = "none";
-    }
-  }
-
-  async function handleCreatePlan(e) {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    clearFormMessages();
+    clearMessages();
 
     const raw = {
-      titulo: inputTitulo?.value,
-      descripcion: inputDescripcion?.value,
-      provincia: selectProvincia?.value,
-      ciudad: inputCiudad?.value,
-      fecha: inputFecha?.value,
-      hora: inputHora?.value,
-      minimo: inputMinimo?.value,
-      maximo: inputMaximo?.value,
-      enlace: inputEnlace?.value,
+      titulo: titulo.value,
+      descripcion: descripcion.value,
+      provincia: provincia.value,
+      ciudad: ciudad.value,
+      fecha: fecha.value,
+      hora: hora.value,
+      minimo: minimo.value,
+      maximo: maximo.value,
+      enlace: enlace.value,
     };
 
     if (!raw.titulo || !raw.provincia || !raw.ciudad || !raw.fecha || !raw.enlace) {
-      showError("Rellena todos los campos obligatorios marcados con *.");
-      return;
-    }
-
-    const min = tryParseInt(raw.minimo, null);
-    const max = tryParseInt(raw.maximo, null);
-    if (min !== null && max !== null && max < min) {
-      showError("El máximo de personas no puede ser menor que el mínimo.");
+      formError.textContent = "Rellena todos los campos obligatorios.";
+      formError.style.display = "block";
       return;
     }
 
@@ -401,94 +304,75 @@ document.addEventListener("DOMContentLoaded", () => {
       raw.enlace = `https://${raw.enlace}`;
     }
 
-    const newPlan = normalizePlan({
-      ...raw,
-      source: apiMode ? "api-local" : "local",
-    });
+    const plan = normalizePlan(raw);
 
     try {
       if (apiMode) {
-        if (apiStatus) apiStatus.textContent = "Guardando plan en la nube...";
-        const newId = await addPlanToApi(newPlan);
-        newPlan.id = newId;
-        if (apiStatus) apiStatus.textContent = "Plan guardado en la nube.";
+        await addPlanToApi(plan);
       } else {
-        plans.unshift(newPlan);
+        plans.unshift(plan);
         saveToStorage(plans);
       }
 
-      plans = sortPlans(
-        apiMode ? [...plans, newPlan] : plans
-      );
-
       form.reset();
-      showSuccess("Plan publicado correctamente. Ya aparece en la lista de planes.");
-      applyFilters();
+      formSuccess.textContent = "Plan publicado correctamente.";
+      formSuccess.style.display = "block";
     } catch (err) {
       console.error(err);
-      showError("Error al guardar el plan. Inténtalo de nuevo en unos segundos.");
-      if (apiStatus) apiStatus.textContent = "Error al guardar en la API.";
+      formError.textContent = "Error guardando el plan.";
+      formError.style.display = "block";
     }
-  }
+  });
 
-  // -------------------------
-  // API: recargar desde Firestore
-  // -------------------------
+  // =============================
+  //   Tiempo real
+  // =============================
 
-  async function reloadFromApi() {
-    if (!apiStatus) return;
-    apiStatus.textContent = "Cargando planes desde la API...";
-
-    try {
-      const apiPlans = await getAllPlanes();
-      plans = sortPlans(apiPlans.map(normalizePlan));
-      apiStatus.textContent = `Cargados ${plans.length} planes desde la API.`;
-      applyFilters();
-    } catch (err) {
-      console.error(err);
-      apiStatus.textContent =
-        "Error al cargar desde la API. Revisa la conexión o las reglas de Firestore.";
-    }
-  }
-
-  // -------------------------
-  // Listeners
-  // -------------------------
-
-  if (form) {
-    form.addEventListener("submit", handleCreatePlan);
-  }
-
-  if (filtroProvincia) filtroProvincia.addEventListener("change", applyFilters);
-  if (filtroFecha) filtroFecha.addEventListener("change", applyFilters);
-  if (filtroBusqueda) filtroBusqueda.addEventListener("input", applyFilters);
-  if (btnLimpiarFiltros) btnLimpiarFiltros.addEventListener("click", resetFilters);
-
-  if (btnRecargar) {
-    btnRecargar.addEventListener("click", () => {
-      if (apiMode) reloadFromApi();
-      else {
-        const storedAgain = loadFromStorage();
-        plans = storedAgain.length ? storedAgain : DEFAULT_PLANS.map(normalizePlan);
-        plans = sortPlans(plans);
-        if (apiStatus) apiStatus.textContent = "Datos recargados desde almacenamiento local.";
-        applyFilters();
-      }
-    });
-  }
-
-  // -------------------------
-  // Carga inicial
-  // -------------------------
-
-  (async function init() {
+  async function init() {
     if (apiMode) {
-      await reloadFromApi();
+      apiStatus.textContent = "Conectando en tiempo real...";
+
+      unsubscribeFromPlans = subscribeToPlanes((apiPlans, error) => {
+        if (error) {
+          apiStatus.textContent = "Error en tiempo real.";
+          return;
+        }
+
+        plans = sortPlans(apiPlans.map(normalizePlan));
+        apiStatus.textContent = `Conectado. ${plans.length} planes cargados.`;
+        applyFilters();
+      });
     } else {
-      const stored = loadFromStorage();
-      plans = stored.length ? stored : DEFAULT_PLANS.map(normalizePlan);
+      plans = loadFromStorage();
+      if (!plans.length) plans = DEFAULT_PLANS.map(normalizePlan);
       plans = sortPlans(plans);
       applyFilters();
     }
-  })();
+  }
+
+  init();
+
+  // ====== Recargar manual ======
+  if (btnRecargar) {
+    btnRecargar.addEventListener("click", async () => {
+      if (!apiMode) return;
+
+      apiStatus.textContent = "Recargando...";
+      const apiPlans = await getAllPlanes();
+      plans = sortPlans(apiPlans.map(normalizePlan));
+      apiStatus.textContent = "Planes actualizados.";
+      applyFilters();
+    });
+  }
+
+  // ====== Eventos de filtros ======
+  filtroProvincia.addEventListener("change", applyFilters);
+  filtroFecha.addEventListener("change", applyFilters);
+  filtroBusqueda.addEventListener("input", applyFilters);
+  btnLimpiar.addEventListener("click", () => {
+    filtroProvincia.value = "todas";
+    filtroFecha.value = "";
+    filtroBusqueda.value = "";
+    applyFilters();
+  });
 });
