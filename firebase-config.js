@@ -1,4 +1,4 @@
-// firebase-config.js
+// firebase-config.js – versión tiempo real sencilla y estable
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
 import {
   getFirestore,
@@ -7,8 +7,6 @@ import {
   addDoc,
   serverTimestamp,
   onSnapshot,
-  query,
-  orderBy,
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -20,18 +18,14 @@ const firebaseConfig = {
   appId: "1:1014152641904:web:18b91bb72b7564eb94e3b5",
 };
 
-// Inicializar Firebase
 export const app = initializeApp(firebaseConfig);
 
-// Firestore + colección
 const db = getFirestore(app);
 const planesCol = collection(db, "planes");
 
-// Leer todos los planes UNA VEZ (para recarga manual)
+// Leer TODOS los planes (para recarga manual)
 export async function getAllPlanes() {
-  const q = query(planesCol, orderBy("fecha"), orderBy("createdAt", "asc"));
-  const snapshot = await getDocs(q);
-
+  const snapshot = await getDocs(planesCol);
   return snapshot.docs.map((doc) => {
     const data = doc.data();
     return {
@@ -72,12 +66,10 @@ export async function addPlanToApi(plan) {
   return docRef.id;
 }
 
-// Suscripción en tiempo real a la colección "planes"
+// Suscripción TIEMPO REAL a la colección "planes"
 export function subscribeToPlanes(callback) {
-  const q = query(planesCol, orderBy("fecha"), orderBy("createdAt", "asc"));
-
   const unsubscribe = onSnapshot(
-    q,
+    planesCol,
     (snapshot) => {
       const planes = snapshot.docs.map((doc) => {
         const data = doc.data();
@@ -100,10 +92,10 @@ export function subscribeToPlanes(callback) {
         };
       });
 
-      callback(planes);
+      callback(planes, null);
     },
     (error) => {
-      console.error("Error en suscripción de planes:", error);
+      console.error("Error en onSnapshot:", error);
       callback(null, error);
     }
   );
