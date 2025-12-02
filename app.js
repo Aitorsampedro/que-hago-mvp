@@ -273,16 +273,29 @@ document.addEventListener("DOMContentLoaded", () => {
   const fechaSel = filtroFecha?.value || "";
   const text = (filtroBusqueda?.value || "").trim().toLowerCase();
 
-  // Solo mostrar planes desde hoy en adelante
-  const today = new Date().toISOString().slice(0, 10);
+  // Hoy a las 00:00, para comparar solo por día
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayMs = today.getTime();
 
   const filtered = plans.filter((p) => {
-    // Ocultar planes con fecha pasada
-    if (p.fecha && p.fecha < today) return false;
+    // 1) Ocultar planes con fecha pasada (solo si la fecha es válida)
+    if (p.fecha) {
+      const planDate = new Date(p.fecha);
+      if (!Number.isNaN(planDate.getTime())) {
+        planDate.setHours(0, 0, 0, 0);
+        const planMs = planDate.getTime();
+        if (planMs < todayMs) return false;
+      }
+    }
 
+    // 2) Filtro por provincia
     if (provSel !== "todas" && p.provincia !== provSel) return false;
+
+    // 3) Filtro por fecha exacta seleccionada en el filtro
     if (fechaSel && p.fecha !== fechaSel) return false;
 
+    // 4) Búsqueda por texto
     if (text) {
       const haystack = [
         p.titulo,
@@ -301,6 +314,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   renderPlans(filtered);
 }
+
+
 
 
   function resetFilters() {
