@@ -269,24 +269,39 @@ document.addEventListener("DOMContentLoaded", () => {
   // ===== Filtros =====
 
   function applyFilters() {
-    const provSel = filtroProvincia?.value || "todas";
-    const fechaSel = filtroFecha?.value || "";
-    const text = (filtroBusqueda?.value || "").trim().toLowerCase();
+  const provSel = filtroProvincia?.value || "todas";
+  const fechaSel = filtroFecha?.value || "";
+  const text = (filtroBusqueda?.value || "").trim().toLowerCase();
 
-    const filtered = plans.filter((p) => {
-      if (provSel !== "todas" && p.provincia !== provSel) return false;
-      if (fechaSel && p.fecha !== fechaSel) return false;
+  // Solo mostrar planes desde hoy en adelante
+  const today = new Date().toISOString().slice(0, 10);
 
-      if (text) {
-        const haystack = `${p.titulo} ${p.descripcion} ${p.provincia} ${p.ciudad}`.toLowerCase();
-        if (!haystack.includes(text)) return false;
-      }
+  const filtered = plans.filter((p) => {
+    // Ocultar planes con fecha pasada
+    if (p.fecha && p.fecha < today) return false;
 
-      return true;
-    });
+    if (provSel !== "todas" && p.provincia !== provSel) return false;
+    if (fechaSel && p.fecha !== fechaSel) return false;
 
-    renderPlans(filtered);
-  }
+    if (text) {
+      const haystack = [
+        p.titulo,
+        p.descripcion,
+        p.provincia,
+        p.ciudad,
+        p.fecha,
+      ]
+        .join(" ")
+        .toLowerCase();
+      if (!haystack.includes(text)) return false;
+    }
+
+    return true;
+  });
+
+  renderPlans(filtered);
+}
+
 
   function resetFilters() {
     if (filtroProvincia) filtroProvincia.value = "todas";
