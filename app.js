@@ -388,9 +388,26 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    if (!/^https?:\/\//i.test(raw.enlace)) {
-      raw.enlace = `https://${raw.enlace}`;
-    }
+    const url = raw.enlace.trim();
+
+// Normalizar si no pone https
+const normalizedUrl = url.startsWith("http") ? url : `https://${url}`;
+
+const isWhatsApp =
+  normalizedUrl.startsWith("https://wa.me/") ||
+  normalizedUrl.startsWith("https://chat.whatsapp.com/");
+
+const isTelegram =
+  normalizedUrl.startsWith("https://t.me/") ||
+  normalizedUrl.startsWith("https://telegram.me/");
+
+if (!isWhatsApp && !isTelegram) {
+  showError("El enlace debe ser de WhatsApp o Telegram.");
+  return;
+}
+
+raw.enlace = normalizedUrl;
+
 
     const newPlan = normalizePlan({
       ...raw,
