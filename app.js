@@ -390,23 +390,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const url = raw.enlace.trim();
 
-// Normalizar si no pone https
-const normalizedUrl = url.startsWith("http") ? url : `https://${url}`;
+// Normalizar enlace
+let url = (raw.enlace || "").trim();
 
-const isWhatsApp =
-  normalizedUrl.startsWith("https://wa.me/") ||
-  normalizedUrl.startsWith("https://chat.whatsapp.com/");
-
-const isTelegram =
-  normalizedUrl.startsWith("https://t.me/") ||
-  normalizedUrl.startsWith("https://telegram.me/");
-
-if (!isWhatsApp && !isTelegram) {
-  showError("El enlace debe ser de WhatsApp o Telegram.");
-  return;
+// Si el usuario pone "chat.whatsapp.com/xxxx" sin https
+if (!/^https?:\/\//i.test(url)) {
+  url = `https://${url}`;
 }
 
-raw.enlace = normalizedUrl;
+// Validar: SOLO WhatsApp o Telegram
+const isWhatsApp =
+  url.startsWith("https://wa.me/") ||
+  url.startsWith("https://chat.whatsapp.com/");
+
+const isTelegram =
+  url.startsWith("https://t.me/") ||
+  url.startsWith("https://telegram.me/");
+
+if (!isWhatsApp && !isTelegram) {
+  showError("El enlace debe ser de WhatsApp o Telegram (wa.me, chat.whatsapp.com, t.me).");
+  return; // <-- ESTO es lo que evita que se cree el plan
+}
+
+// Guardar el enlace ya validado
+raw.enlace = url;
+if (form) {
+  form.addEventListener("submit", handleCreatePlan);
+}
 
 
     const newPlan = normalizePlan({
