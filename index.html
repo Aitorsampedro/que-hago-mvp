@@ -6,11 +6,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- Meta básica -->
-  <meta name="description" content="Plataforma para crear y encontrar planes en Galicia. Planes creados por gente como tú." />
+  <meta name="description" content="Encuentra o crea planes reales en Galicia: rutas, cine, aventuras, quedadas y mucho más. Todo organizado por gente como tú." />
 
-  <!-- CSS externo -->
+  <!-- CSS -->
   <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body data-api-mode="api" data-api-source="firebase">
   <header class="site-header">
     <div class="container">
@@ -24,37 +25,25 @@
   <main class="site-main">
     <div class="container layout-grid">
 
-      <!-- Columna izquierda: crear plan -->
+      <!-- Crear plan -->
       <section class="create-plan" aria-labelledby="create-plan-title">
         <h2 id="create-plan-title">Crear un plan</h2>
 
         <form id="plan-form" novalidate>
           <div class="form-group">
             <label for="titulo">Título del plan *</label>
-            <input
-              type="text"
-              id="titulo"
-              name="titulo"
-              placeholder="Ej: Puenting en el río Miño"
-              required
-            />
+            <input type="text" id="titulo" placeholder="Ej: Puenting en el río Miño" required />
           </div>
 
           <div class="form-group">
             <label for="descripcion">Descripción *</label>
-            <textarea
-              id="descripcion"
-              name="descripcion"
-              rows="4"
-              placeholder="Describe el plan, punto de encuentro, material necesario..."
-              required
-            ></textarea>
+            <textarea id="descripcion" rows="4" placeholder="Describe el plan, punto de encuentro, material necesario..." required></textarea>
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label for="provincia">Provincia *</label>
-              <select id="provincia" name="provincia" required>
+              <select id="provincia" required>
                 <option value="">Provincia</option>
                 <option value="A Coruña">A Coruña</option>
                 <option value="Lugo">Lugo</option>
@@ -64,120 +53,71 @@
             </div>
 
             <div class="form-group">
-              <label for="ciudad">Ciudad / pueblo / punto exacto *</label>
-              <input
-                type="text"
-                id="ciudad"
-                name="ciudad"
-                placeholder="Ej: Pontedeume, Vigo centro, Playa de Samil..."
-                required
-              />
+              <label for="ciudad">Ciudad / pueblo *</label>
+              <input type="text" id="ciudad" placeholder="Ej: Pontedeume, Vigo centro..." required />
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label for="fecha">Fecha del plan *</label>
-              <input
-                type="date"
-                id="fecha"
-                name="fecha"
-                required
-              />
+              <input type="date" id="fecha" required />
             </div>
 
             <div class="form-group">
               <label for="hora">Hora aproximada</label>
-              <input
-                type="time"
-                id="hora"
-                name="hora"
-              />
+              <input type="time" id="hora" />
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label for="minimo">Personas mínimas *</label>
-              <input
-                type="number"
-                id="minimo"
-                name="minimo"
-                min="1"
-                step="1"
-                placeholder="2"
-                required
-              />
+              <input type="number" id="minimo" min="1" step="1" placeholder="2" required />
             </div>
 
             <div class="form-group">
               <label for="maximo">Personas máximas *</label>
-              <input
-                type="number"
-                id="maximo"
-                name="maximo"
-                min="1"
-                step="1"
-                placeholder="6"
-                required
-              />
+              <input type="number" id="maximo" min="1" step="1" placeholder="6" required />
             </div>
           </div>
 
           <div class="form-group">
-            <label for="enlace">
-              Enlace del grupo (WhatsApp / Telegram) *
-            </label>
-            <input
-              type="url"
-              id="enlace"
-              name="enlace"
-              placeholder="Pega aquí el enlace del grupo del plan"
-              required
-            />
+            <label for="enlace">Enlace del grupo (WhatsApp / Telegram) *</label>
+            <input type="url" id="enlace" placeholder="Pega el enlace de invitación" required />
             <p class="field-hint">
-              Crea primero el grupo en WhatsApp / Telegram, copia el enlace de invitación y pégalo aquí.
+              Crea un grupo en WhatsApp o Telegram y pega aquí el enlace de invitación.
             </p>
           </div>
 
           <div class="form-actions">
-            <button type="submit" id="btn-publicar-plan" class="btn-primary">
-              Publicar plan
-            </button>
-            <p class="save-hint">
-            <!--- De momento los planes se guardan en este navegador o en una base de datos de pruebas.-->
-            </p>
+            <button type="submit" id="btn-publicar-plan" class="btn-primary">Publicar plan</button>
           </div>
 
-          <div id="form-error" class="form-error" aria-live="polite"></div>
-          <div id="form-success" class="form-success" aria-live="polite"></div>
+          <div id="form-error" class="form-error"></div>
+          <div id="form-success" class="form-success"></div>
         </form>
 
-        <aside class="ad-slot" aria-label="Espacio para promociones">
+        <aside class="ad-slot">
           <h3 class="ad-title">Espacio para promociones</h3>
-          <p>
-             <!--- Aquí podrás mostrar promociones de planes, negocios de aventura locales o publicidad
-            segmentada cuando haya tráfico. -->
-          </p>
+          <p>Pronto podrás ver aquí planes destacados y actividades recomendadas.</p>
         </aside>
       </section>
 
-      <!-- Columna derecha: filtros + lista -->
+      <!-- Lista de planes -->
       <section class="plans-section" aria-labelledby="plans-section-title">
         <div class="plans-header">
           <div>
             <h2 id="plans-section-title">Planes publicados</h2>
             <p id="results-count" class="results-count">Cargando planes...</p>
           </div>
-          <button type="button" id="btn-recargar" class="btn-ghost">
-            Recargar desde la API
-          </button>
+          <button type="button" id="btn-recargar" class="btn-ghost">Recargar desde la API</button>
         </div>
 
-        <div class="filters" aria-label="Filtros de búsqueda de planes">
+        <div class="filters">
           <div class="form-group">
             <label for="filtro-provincia">Provincia</label>
-            <select id="filtro-provincia" name="filtro-provincia">
+            <select id="filtro-provincia">
               <option value="todas">Todas las provincias</option>
               <option value="A Coruña">A Coruña</option>
               <option value="Lugo">Lugo</option>
@@ -188,77 +128,50 @@
 
           <div class="form-group">
             <label for="filtro-fecha">Fecha</label>
-            <input
-              type="date"
-              id="filtro-fecha"
-              name="filtro-fecha"
-            />
+            <input type="date" id="filtro-fecha" />
           </div>
 
           <div class="form-group">
             <label for="filtro-busqueda">Buscar por texto</label>
-            <input
-              type="text"
-              id="filtro-busqueda"
-              name="filtro-busqueda"
-              placeholder="Ej: ruta, cine, surf, cañas..."
-            />
+            <input type="text" id="filtro-busqueda" placeholder="Ej: ruta, cine, surf..." />
           </div>
 
-          <div class="filters-actions">
-            <button type="button" id="btn-limpiar-filtros" class="btn-secondary">
-              Limpiar filtros
-            </button>
-          </div>
+          <button type="button" id="btn-limpiar-filtros" class="btn-secondary">Limpiar</button>
         </div>
 
-        <div id="plan-list" class="plan-list" aria-live="polite">
-          <!-- Aquí se pintan los planes -->
-        </div>
+        <div id="plan-list" class="plan-list"></div>
 
         <template id="plan-card-template">
           <article class="plan" data-plan-id="">
             <header class="plan-header">
-              <div class="plan-header-main">
+              <div>
                 <h3 class="plan-title"></h3>
                 <p class="plan-location">
                   <span class="badge badge-province"></span>
                   <span class="badge badge-city"></span>
                 </p>
               </div>
-              <p class="plan-people">
-                <span class="badge badge-people"></span>
-              </p>
+              <p class="plan-people"><span class="badge badge-people"></span></p>
             </header>
 
             <p class="plan-description"></p>
-
             <p class="plan-meta">
               <span class="plan-date"></span>
               <span class="plan-time"></span>
             </p>
 
             <div class="plan-actions">
-              <a
-                class="btn-primary btn-join"
-                href="#"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Unirme al grupo
-              </a>
-              <button type="button" class="btn-ghost btn-share">
-                Compartir por WhatsApp
-              </button>
+              <a class="btn-primary btn-join" href="#" target="_blank">Unirme al grupo</a>
+              <button type="button" class="btn-ghost btn-share">Compartir por WhatsApp</button>
             </div>
           </article>
         </template>
 
         <div id="empty-state" class="empty-state" hidden>
-          <p>No hay planes con esos filtros. Prueba a cambiarlos o crea uno nuevo.</p>
+          <p>No hay planes con esos filtros. Crea uno nuevo o ajusta la búsqueda.</p>
         </div>
 
-        <div id="api-status" class="api-status" aria-live="polite"></div>
+        <div id="api-status" class="api-status"></div>
       </section>
     </div>
   </main>
@@ -266,23 +179,16 @@
   <footer class="site-footer">
     <div class="container">
       <p>Qué hago? · MVP Galicia · v0.2</p>
-      <p class="footer-note">
-        
-      </p>
     </div>
   </footer>
 
-  <!-- JS principal -->
-  <script src="app.js" type="module"></script>
+  <!-- Carga de scripts (SOLO UNA VEZ) -->
+  <script type="module" src="firebase-config.js?v=20250202"></script>
+  <script type="module" src="app.js?v=20250202"></script>
 
-  <!--
-    🔧 Punto previsto para integrar Firebase / API externa
-    <script type="module" src="firebase-config.js"></script>
-  -->   <!-- JS principal -->
- <script type="module" src="firebase-config.js?v=20251202a"></script>
-<script type="module" src="app.js?v=20251202a"></script>
-<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "cfc124a96bd847ac8dcf22cdea5e1255"}'></script><!-- End Cloudflare Web Analytics -->
-</body>
-</html>
+  <!-- Cloudflare Analytics -->
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js"
+    data-cf-beacon='{"token":"cfc124a96bd847ac8dcf22cdea5e1255"}'></script>
+
 </body>
 </html>
