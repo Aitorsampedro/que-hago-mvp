@@ -38,11 +38,23 @@ function normalizePlan(raw) {
 
 function sortPlans(list) {
   return [...list].sort((a, b) => {
-    if (a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
-    return (a.createdAt || "").localeCompare(b.createdAt || "");
+    // 1. Comparar por fecha (string)
+    if (a.fecha && b.fecha && a.fecha !== b.fecha) {
+      return a.fecha.localeCompare(b.fecha);
+    }
+
+    // 2. Comparar createdAt convirtiendo Firestore Timestamp a milisegundos
+    const aTime = a.createdAt?.seconds
+      ? a.createdAt.seconds * 1000
+      : (new Date(a.createdAt).getTime() || 0);
+
+    const bTime = b.createdAt?.seconds
+      ? b.createdAt.seconds * 1000
+      : (new Date(b.createdAt).getTime() || 0);
+
+    return aTime - bTime;
   });
 }
-
 // ----------------------------
 // Render
 // ----------------------------
