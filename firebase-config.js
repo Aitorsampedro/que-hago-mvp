@@ -1,16 +1,19 @@
 // firebase-config.js — versión definitiva con IDs deterministas (no duplicados)
+// firebase-config.js — versión CDN ES modules (100% funcional en GitHub Pages)
 
-import { initializeApp } from "firebase/app";
+import { initializeApp } 
+  from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+
 import {
   getFirestore,
   collection,
   doc,
   setDoc,
-  onSnapshot,
   getDocs,
+  onSnapshot,
   query,
   orderBy
-} from "firebase/firestore";
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // ----------------------------
 // CONFIG FIREBASE
@@ -29,24 +32,22 @@ const db = getFirestore(app);
 const planesRef = collection(db, "planes");
 
 // ----------------------------
-// ID determinista (evita duplicados 100%)
+// ID determinista
 // ----------------------------
-async function generatePlanId(plan) {
+function generatePlanId(plan) {
   const base = `${plan.titulo}__${plan.fecha}__${plan.ciudad}__${plan.provincia}`.toLowerCase();
-  const encoder = new TextEncoder();
-  const data = encoder.encode(base);
-  const hash = await crypto.subtle.digest("SHA-1", data);
-  return Array.from(new Uint8Array(hash))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("")
-    .slice(0, 20);
+  let hash = 5381;
+  for (let i = 0; i < base.length; i++) {
+    hash = (hash * 33) ^ base.charCodeAt(i);
+  }
+  return String(Math.abs(hash)).slice(0, 20);
 }
 
 // ----------------------------
 // Añadir plan SIN duplicados
 // ----------------------------
 export async function addPlanToApi(plan) {
-  const id = await generatePlanId(plan);
+  const id = generatePlanId(plan);
   const docRef = doc(planesRef, id);
 
   await setDoc(docRef, {
@@ -58,7 +59,7 @@ export async function addPlanToApi(plan) {
 }
 
 // ----------------------------
-// Obtener planes (lector único)
+// Obtener planes
 // ----------------------------
 export async function getAllPlanes() {
   const q = query(planesRef, orderBy("fecha", "asc"));
@@ -75,3 +76,4 @@ export function subscribeToPlanes(callback) {
     callback(docs);
   });
 }
+
