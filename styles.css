@@ -1,19 +1,23 @@
 /* --------------------------------------
-   TIPOGRAFÍA AIRBNB × ASTON MARTIN
+   TIPOGRAFÍA CORPORATE
 --------------------------------------- */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --color-primary: #005745;        /* Aston Martin Green */
-  --color-primary-light: #0A7A65;  /* Light accent */
-  --color-accent: #FF385C;         /* Airbnb accent */
-  --color-bg: #F9FAFB;             /* Airbnb White-Grey */
-  --color-text: #111827;           /* Main text */
-  --color-text-soft: #6B7280;      /* Secondary text */
+  --color-primary: #005745;           /* Aston Martin Racing Green */
+  --color-primary-dark: #003F33;      /* Header corporate */
+  --color-primary-light: #0A7A65;     /* Accent */
+  --color-bg: #EEF1F2;                /* Gris premium corporativo */
+  --color-bg-alt: #F5F7F8;
   --color-card: #FFFFFF;
-  --color-border: #E5E7EB;
+  --color-text: #1F2937;
+  --color-text-soft: #6B7280;
+  --color-border: #D1D5DB;
 }
 
+/* --------------------------------------
+   GENERAL
+--------------------------------------- */
 * {
   box-sizing: border-box;
 }
@@ -23,36 +27,46 @@ body {
   background: var(--color-bg);
   font-family: 'Inter', sans-serif;
   color: var(--color-text);
+  line-height: 1.5;
 }
 
 /* --------------------------------------
-   HEADER PREMIUM
+   HEADER CORPORATE PREMIUM
 --------------------------------------- */
 header {
-  background: var(--color-card);
-  border-bottom: 1px solid var(--color-border);
-  padding: 1.5rem 2rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  background: var(--color-primary-dark);
+  color: white;
+  padding: 1.6rem 2rem;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.25);
 }
+
+header .logo {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+}
+
+header .logo-text {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+}
+
 
 header h1 {
   margin: 0;
-  font-size: 1.9rem;
+  font-size: 2rem;
   font-weight: 700;
-  color: var(--color-primary);
 }
 
 header .sub {
-  margin: 0;
-  font-size: 0.95rem;
-  color: var(--color-text-soft);
+  margin-top: 0.4rem;
+  font-size: 1rem;
+  opacity: 0.85;
 }
 
 /* --------------------------------------
-   CONTAINER & GRID
+   CONTENEDOR PRINCIPAL
 --------------------------------------- */
 .container {
   max-width: 1100px;
@@ -67,52 +81,53 @@ header .sub {
 
 @media (min-width: 900px) {
   .grid-2 {
-    grid-template-columns: 1.2fr 0.8fr;
+    grid-template-columns: 1.25fr 0.75fr;
   }
 }
 
 /* --------------------------------------
-   FORM – ESTILO AIRBNB
+   FORMULARIO CORPORATE
 --------------------------------------- */
 form {
   background: var(--color-card);
   border: 1px solid var(--color-border);
-  border-radius: 18px;
-  padding: 1.8rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-}
-
-form h2 {
-  margin-top: 0;
+  border-radius: 16px;
+  padding: 1.7rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
 }
 
 input, textarea, select {
   width: 100%;
-  padding: 0.8rem;
-  margin-bottom: 1rem;
-  border-radius: 12px;
+  padding: 0.9rem;
+  margin-bottom: 1.1rem;
+  border-radius: 10px;
   border: 1px solid var(--color-border);
   font-size: 1rem;
-  background: #FFFFFF;
-  transition: border 0.2s ease;
+  font-family: 'Inter', sans-serif;    /* ← Soluciona el estilo anticuado */
+  transition: border 0.25s ease, background 0.25s ease;
+  background: var(--color-bg-alt);
+  line-height: 1.5;                    /* ← Mejora lectura en textarea */
 }
 
 input:focus, textarea:focus, select:focus {
-  outline: none;
   border-color: var(--color-primary);
+  background: #FFFFFF;
+  outline: none;
 }
 
-/* Botón principal */
+/* BOTÓN CORPORATE */
 button {
+  width: 100%;
   background: var(--color-primary);
   color: white;
   border: none;
-  padding: 0.85rem 1.4rem;
+  padding: 0.9rem 1.2rem;
+  font-size: 1.05rem;
   border-radius: 14px;
-  font-size: 1rem;
   cursor: pointer;
   font-weight: 600;
-  transition: background 0.2s ease, transform 0.1s;
+  letter-spacing: 0.3px;
+  transition: background 0.25s ease, transform 0.15s;
 }
 
 button:hover {
@@ -120,86 +135,99 @@ button:hover {
 }
 
 button:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 /* --------------------------------------
-   ADSLOT / PROMO
+   PROMO BOX
 --------------------------------------- */
 .ad-slot {
-  margin-top: 1.5rem;
+  margin-top: 1.4rem;
   padding: 1rem;
-  border: 1px dashed var(--color-primary-light);
-  border-radius: 16px;
-  background: #E6F4F1;
-  font-size: 0.9rem;
+  border: 1px dashed var(--color-primary);
+  border-radius: 14px;
+  background: rgba(0, 87, 69, 0.06);
   color: var(--color-primary);
+  font-size: 0.95rem;
 }
 
 /* --------------------------------------
-   PLANES LIST
+   LISTA DE PLANES
 --------------------------------------- */
 .plan-list {
   display: grid;
-  gap: 1.5rem;
+  gap: 1.4rem;
 }
 
-/* Card estilo premium */
+/* CARD CORPORATE */
 .plan {
   background: var(--color-card);
   border: 1px solid var(--color-border);
-  border-radius: 20px;
+  border-radius: 18px;
   padding: 1.4rem;
-  box-shadow: 0 6px 14px rgba(0,0,0,0.06);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.10);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .plan:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 22px rgba(0,0,0,0.15);
 }
 
 .plan h3 {
   margin-top: 0;
-  margin-bottom: 0.4rem;
-  font-size: 1.4rem;
+  font-size: 1.35rem;
   font-weight: 600;
 }
 
-.plan .plan-description {
+/* Descripción */
+.plan-description {
   color: var(--color-text-soft);
-  margin-bottom: 0.8rem;
+  margin: 0.5rem 0 1rem;
 }
 
-/* Badges */
+/* BADGES */
 .badge {
   display: inline-block;
-  background: var(--color-primary-light);
-  color: white;
-  padding: 0.25rem 0.55rem;
+  padding: 0.3rem 0.55rem;
   font-size: 0.75rem;
   border-radius: 8px;
+  font-weight: 600;
   margin-right: 0.4rem;
+  background: var(--color-primary);
+  color: white;
 }
 
 .badge-people {
-  background: var(--color-accent);
+  background: var(--color-primary-light);
 }
 
-/* Button inside card */
+/* BOTÓN UNIRSE */
 .btn-join {
   display: inline-block;
-  background: var(--color-primary);
-  padding: 0.7rem 1.2rem;
-  border-radius: 14px;
-  font-size: 0.95rem;
+  margin-top: 0.8rem;
+  background: var(--color-primary-dark);
   color: white;
+  padding: 0.75rem 1.2rem;
+  border-radius: 14px;
   text-decoration: none;
+  font-size: 0.95rem;
   font-weight: 600;
+  transition: background 0.2s;
 }
 
 .btn-join:hover {
-  background: var(--color-primary-light);
+  background: var(--color-primary);
+}
+
+/* --------------------------------------
+   FILTROS
+--------------------------------------- */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 1.2rem;
 }
 
 /* --------------------------------------
@@ -207,7 +235,56 @@ button:active {
 --------------------------------------- */
 #empty-state {
   text-align: center;
-  padding: 2rem 0;
-  color: var(--color-text-soft);
+  padding: 1.5rem 0;
   font-size: 1rem;
+  color: var(--color-text-soft);
+}
+/* ===== FOOTER PREMIUM ===== */
+
+.footer {
+  background: #003F33; /* Verde profundo corporativo */
+  padding: 2.5rem 1rem;
+  margin-top: 4rem;
+  color: #ffffff;
+}
+
+.footer-container {
+  max-width: 1100px;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.8rem;
+  text-align: center;
+}
+
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.footer-links {
+  display: flex;
+  gap: 1.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.footer-links a {
+  color: #d4e6de;
+  font-size: .95rem;
+  text-decoration: none;
+  transition: opacity .2s;
+}
+
+.footer-links a:hover {
+  opacity: .65;
+}
+
+.footer-copy {
+  font-size: .8rem;
+  opacity: .7;
 }

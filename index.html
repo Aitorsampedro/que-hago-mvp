@@ -5,23 +5,61 @@
   <title>Qué hago? – Planes en Galicia</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+
 </head>
 
 <body>
-  <!-- HEADER PREMIUM -->
+
+  <!-- HEADER CORPORATE -->
   <header>
-    <h1>Qué hago?</h1>
-    <p class="sub">Descubre y únete a planes creados por gente como tú.</p>
+    <div class="logo">
+  <svg width="40" height="40" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="30" cy="30" r="26" 
+            fill="none" 
+            stroke="#FFFFFF" 
+            stroke-width="4"/>
+
+    <line x1="30" y1="16" x2="30" y2="45" 
+          stroke="#FFFFFF"
+          stroke-width="4" 
+          stroke-linecap="round"/>
+
+    <path d="M30 24 
+             L18 24 
+             L20 20 
+             L30 20 Z"
+          fill="none"
+          stroke="#FFFFFF"
+          stroke-width="3"
+          stroke-linejoin="round"/>
+
+    <path d="M30 32 
+             L42 32 
+             L40 36 
+             L30 36 Z"
+          fill="none"
+          stroke="#FFFFFF"
+          stroke-width="3"
+          stroke-linejoin="round"/>
+  </svg>
+  <span class="logo-text">Qué Hago?</span>
+</div>
+
+    <p class="sub">Explora, crea y únete a planes reales en Galicia.</p>
   </header>
 
   <div class="container grid-2">
 
     <!-- COLUMNA IZQUIERDA – CREAR PLAN -->
     <div>
-      <h2 style="margin-bottom: 1rem;">Crear un plan</h2>
+      <h2 style="margin-bottom: 1rem; color: var(--color-primary-dark);">
+        Crear un plan
+      </h2>
 
       <form id="plan-form">
         <input type="text" id="titulo" placeholder="Título del plan (ej: Paddle en Ares)" required />
+
         <textarea id="descripcion" placeholder="Describe el plan: precio, punto de encuentro, nivel..." required></textarea>
 
         <select id="provincia" required>
@@ -34,7 +72,7 @@
 
         <input type="text" id="ciudad" placeholder="Ciudad / punto exacto" required />
         <input type="date" id="fecha" required />
-        <input type="time" id="hora" placeholder="Hora del plan" />
+        <input type="time" id="hora" placeholder="Hora" />
 
         <input type="number" id="minimo" placeholder="Personas mínimas" />
         <input type="number" id="maximo" placeholder="Personas máximas" />
@@ -45,16 +83,18 @@
       </form>
 
       <div class="ad-slot">
-        Próximamente: ofertas, actividades premium y promos de aventura.
+        Pronto podrás encontrar actividades destacadas, ofertas y promociones exclusivas.
       </div>
     </div>
 
     <!-- COLUMNA DERECHA – PLANES -->
     <div>
-      <h2 style="margin-bottom: 1rem;">Planes disponibles</h2>
+      <h2 style="margin-bottom: 1rem; color: var(--color-primary-dark);">
+        Planes disponibles
+      </h2>
 
       <!-- FILTROS -->
-      <div class="filters" style="margin-bottom: 1.2rem;">
+      <div class="filters">
         <select id="filtro-provincia">
           <option value="todas">Todas las provincias</option>
           <option value="A Coruña">A Coruña</option>
@@ -66,29 +106,31 @@
         <input type="date" id="filtro-fecha" />
         <input type="text" id="filtro-busqueda" placeholder="Buscar plan..." />
 
-        <button id="btn-limpiar-filtros" style="margin-top: 0.5rem;">Limpiar filtros</button>
+        <button id="btn-limpiar-filtros">
+          Limpiar filtros
+        </button>
       </div>
 
-      <!-- LISTA DE PLANES -->
+      <!-- LISTADO -->
       <div id="plan-list" class="plan-list"></div>
 
       <!-- EMPTY STATE -->
-      <p id="empty-state" hidden>No hay planes con estos filtros. ¡Sé el primero en crear uno!</p>
+      <p id="empty-state" hidden>No hay planes. Sé el primero en crear uno.</p>
     </div>
 
   </div>
 
-  <!-- TEMPLATE CARD (NO TOCAR IDs) -->
+  <!-- TEMPLATE CARD -->
   <template id="plan-card-template">
     <div class="plan">
       <h3 class="plan-title"></h3>
       <p class="plan-description"></p>
 
-      <p>
+      <div style="margin-bottom: 0.6rem;">
         <span class="badge badge-province"></span>
         <span class="badge badge-city"></span>
         <span class="badge badge-people"></span>
-      </p>
+      </div>
 
       <p><strong>Fecha:</strong> <span class="plan-date"></span></p>
       <p><strong>Hora:</strong> <span class="plan-time"></span></p>
@@ -100,5 +142,32 @@
   <!-- SCRIPTS -->
   <script type="module" src="/firebase-config-v2.js"></script>
   <script type="module" src="/app.js"></script>
+<footer class="footer">
+  <div class="footer-container">
+
+    <div class="footer-brand">
+      <svg width="38" height="38" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="30" cy="30" r="26" fill="none" stroke="#ffffff" stroke-width="4"/>
+        <line x1="30" y1="16" x2="30" y2="45" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+        <path d="M30 24 L18 24 L20 20 L30 20 Z" fill="none" stroke="#ffffff" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M30 32 L42 32 L40 36 L30 36 Z" fill="none" stroke="#ffffff" stroke-width="3" stroke-linejoin="round"/>
+      </svg>
+      <span>Qué Hago?</span>
+    </div>
+
+    <div class="footer-links">
+      <a href="#">Sobre nosotros</a>
+      <a href="#">Privacidad</a>
+      <a href="#">Términos</a>
+      <a href="#">Contacto</a>
+    </div>
+
+    <div class="footer-copy">
+      © 2025 Qué Hago? — Todos los derechos reservados.
+    </div>
+
+  </div>
+</footer>
+
 </body>
 </html>
