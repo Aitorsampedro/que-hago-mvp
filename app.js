@@ -4,7 +4,7 @@ import {
   getAllPlanes,
   addPlanToApi,
   subscribeToPlanes,
-} from "./firebase-config.js?v=20250206";
+} from "./firebase-config.js";
 
 // ----------------------------
 // Variables globales
