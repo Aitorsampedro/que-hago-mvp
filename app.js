@@ -1,9 +1,9 @@
-// app.js — versión 100% funcional y compatible con tu index + Firestore
+// app.js — versión final optimizada + IDs deterministas
 
 import {
   getAllPlanes,
   addPlanToApi,
-  subscribeToPlanes,
+  subscribeToPlanes
 } from "./firebase-config.js";
 
 // ----------------------------
@@ -13,16 +13,17 @@ let plans = [];
 let unsubscribe = null;
 
 // ----------------------------
-// Utilidades
+// Utils
 // ----------------------------
 function parseOrNull(v) {
   const n = parseInt(v, 10);
   return isNaN(n) ? null : n;
 }
 
+// Normalización flexible
 function normalizePlan(raw) {
   return {
-    id: raw.id || crypto.randomUUID(),
+    id: raw.id,
     titulo: raw.titulo || "",
     descripcion: raw.descripcion || "",
     provincia: raw.provincia || "",
@@ -32,31 +33,25 @@ function normalizePlan(raw) {
     minimo: raw.minimo ?? null,
     maximo: raw.maximo ?? null,
     enlace: raw.enlace || "",
-    createdAt: raw.createdAt || "",
+    createdAt: raw.createdAt || null
   };
 }
 
+// Ordenación robusta
 function sortPlans(list) {
-  return [...list].sort((a, b) => {
-    // Comparación por fecha si ambas están presentes
-    if (a.fecha && b.fecha && a.fecha !== b.fecha) {
-      return a.fecha.localeCompare(b.fecha);
+  const getTime = (val) => {
+    if (!val) return 0;
+
+    if (typeof val === "object" && "seconds" in val) {
+      return val.seconds * 1000;
     }
 
-    // Convertir Firestore Timestamp a milisegundos
-    const getTime = (val) => {
-      if (!val) return 0;
+    const t = new Date(val).getTime();
+    return isNaN(t) ? 0 : t;
+  };
 
-      // Si es un timestamp de Firestore
-      if (typeof val === "object" && "seconds" in val) {
-        return val.seconds * 1000;
-      }
-
-      // Si es string ISO
-      const asDate = new Date(val);
-      return isNaN(asDate.getTime()) ? 0 : asDate.getTime();
-    };
-
+  return [...list].sort((a, b) => {
+    if (a.fecha !== b.fecha) return a.fecha.localeCompare(b.fecha);
     return getTime(a.createdAt) - getTime(b.createdAt);
   });
 }
@@ -86,30 +81,30 @@ function renderPlans(plans) {
     node.querySelector(".badge-city").textContent = p.ciudad;
     node.querySelector(".plan-description").textContent = p.descripcion;
     node.querySelector(".plan-date").textContent = p.fecha;
-    node.querySelector(".plan-time").textContent = p.hora || "";
+    node.querySelector(".plan-time").textContent = p.hora || "—";
 
     const people = node.querySelector(".badge-people");
     if (p.minimo && p.maximo) people.textContent = `${p.minimo}-${p.maximo} personas`;
-    else if (p.minimo) people.textContent = `Desde ${p.minimo}`;
-    else if (p.maximo) people.textContent = `Hasta ${p.maximo}`;
-    else people.textContent = "Personas por definir";
+    else people.textContent = "Personas indefinidas";
 
-    const joinBtn = node.querySelector(".btn-join");
-    joinBtn.href = p.enlace;
+    node.querySelector(".btn-join").href = p.enlace;
 
     list.appendChild(node);
   });
 }
 
 // ----------------------------
-// Filtros
+// Filtros (incluye ocultar pasados)
 // ----------------------------
 function applyFilters() {
   const prov = document.getElementById("filtro-provincia").value;
   const fecha = document.getElementById("filtro-fecha").value;
   const text = document.getElementById("filtro-busqueda").value.toLowerCase();
 
+  const today = new Date().toISOString().slice(0, 10);
+
   const filtered = plans.filter((p) => {
+    if (p.fecha < today) return false; // Ocultar pasados
     if (prov !== "todas" && p.provincia !== prov) return false;
     if (fecha && p.fecha !== fecha) return false;
 
@@ -136,7 +131,6 @@ async function handleSubmit(e) {
   const maximo = parseOrNull(document.getElementById("maximo").value);
   let enlace = document.getElementById("enlace").value.trim();
 
-  // Validación de enlace (WhatsApp / Telegram)
   if (!/^https?:\/\//i.test(enlace)) enlace = "https://" + enlace;
 
   const wa = enlace.startsWith("https://wa.me/") || enlace.startsWith("https://chat.whatsapp.com/");
@@ -146,7 +140,7 @@ async function handleSubmit(e) {
     return;
   }
 
-  const newPlan = normalizePlan({
+  const newPlan = {
     titulo,
     descripcion,
     provincia,
@@ -156,8 +150,8 @@ async function handleSubmit(e) {
     minimo,
     maximo,
     enlace,
-    createdAt: new Date().toISOString(),
-  });
+    createdAt: new Date().toISOString()
+  };
 
   await addPlanToApi(newPlan);
 
@@ -168,13 +162,11 @@ async function handleSubmit(e) {
 // Inicialización
 // ----------------------------
 async function init() {
-  // Activar listener tiempo real
   unsubscribe = subscribeToPlanes((docs) => {
     plans = sortPlans(docs.map(normalizePlan));
     applyFilters();
   });
 
-  // Filtros
   document.getElementById("filtro-provincia").addEventListener("change", applyFilters);
   document.getElementById("filtro-fecha").addEventListener("change", applyFilters);
   document.getElementById("filtro-busqueda").addEventListener("input", applyFilters);
@@ -185,7 +177,6 @@ async function init() {
     applyFilters();
   });
 
-  // Formulario
   document.getElementById("plan-form").addEventListener("submit", handleSubmit);
 }
 

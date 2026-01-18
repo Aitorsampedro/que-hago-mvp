@@ -1,19 +1,20 @@
-// firebase-config.js — versión completa y corregida
+// firebase-config.js — versión definitiva con IDs deterministas (no duplicados)
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { initializeApp } from "firebase/app";
 import {
   getFirestore,
   collection,
-  addDoc,
-  getDocs,
+  doc,
+  setDoc,
   onSnapshot,
-  serverTimestamp,
+  getDocs,
   query,
-  orderBy,
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  orderBy
+} from "firebase/firestore";
 
-// -------------------- CONFIGURACIÓN FIREBASE --------------------
-
+// ----------------------------
+// CONFIG FIREBASE
+// ----------------------------
 const firebaseConfig = {
   apiKey: "AIzaSyANedM3dtDHdaD7a86mxDQeMc_-S7Q8gc8",
   authDomain: "que-hago-mvp.firebaseapp.com",
@@ -25,60 +26,52 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-
 const planesRef = collection(db, "planes");
 
-// -------------------- OBTENER PLANES --------------------
+// ----------------------------
+// ID determinista (evita duplicados 100%)
+// ----------------------------
+async function generatePlanId(plan) {
+  const base = `${plan.titulo}__${plan.fecha}__${plan.ciudad}__${plan.provincia}`.toLowerCase();
+  const encoder = new TextEncoder();
+  const data = encoder.encode(base);
+  const hash = await crypto.subtle.digest("SHA-1", data);
+  return Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+    .slice(0, 20);
+}
 
-export async function getAllPlanes() {
-  const q = query(planesRef, orderBy("createdAt", "desc"));
-  const snapshot = await getDocs(q);
+// ----------------------------
+// Añadir plan SIN duplicados
+// ----------------------------
+export async function addPlanToApi(plan) {
+  const id = await generatePlanId(plan);
+  const docRef = doc(planesRef, id);
 
-  const results = [];
-  snapshot.forEach((doc) => {
-    results.push({ id: doc.id, ...doc.data() });
+  await setDoc(docRef, {
+    ...plan,
+    createdAt: plan.createdAt || new Date().toISOString()
   });
 
-  return results;
+  return id;
 }
 
-// -------------------- SUBSCRIBIR A TIEMPO REAL --------------------
+// ----------------------------
+// Obtener planes (lector único)
+// ----------------------------
+export async function getAllPlanes() {
+  const q = query(planesRef, orderBy("fecha", "asc"));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
 
+// ----------------------------
+// Listener realtime
+// ----------------------------
 export function subscribeToPlanes(callback) {
-  return onSnapshot(
-    query(planesRef, orderBy("createdAt", "desc")),
-    (snapshot) => {
-      const results = [];
-      snapshot.forEach((doc) => {
-        results.push({ id: doc.id, ...doc.data() });
-      });
-      callback(results, null);
-    },
-    (error) => callback([], error)
-  );
-}
-
-// -------------------- CREAR NUEVO PLAN --------------------
-
-export async function addPlanToApi(plan) {
-  const payload = {
-    titulo: plan.titulo,
-    descripcion: plan.descripcion,
-    provincia: plan.provincia,
-    ciudad: plan.ciudad,
-    fecha: plan.fecha,
-    enlace: plan.enlace,
-
-    // convertir hora vacía a null
-    hora: plan.hora ? plan.hora : null,
-
-    // convertir mínimo y máximo a número real o null
-    minimo: plan.minimo != null ? Number(plan.minimo) : null,
-    maximo: plan.maximo != null ? Number(plan.maximo) : null,
-
-    createdAt: serverTimestamp(),
-  };
-
-  const docRef = await addDoc(planesRef, payload);
-  return docRef.id;
+  return onSnapshot(planesRef, (snapshot) => {
+    const docs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    callback(docs);
+  });
 }
