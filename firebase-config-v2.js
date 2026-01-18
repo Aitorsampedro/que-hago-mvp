@@ -1,0 +1,79 @@
+// firebase-config.js — versión definitiva con IDs deterministas (no duplicados)
+// firebase-config.js — versión CDN ES modules (100% funcional en GitHub Pages)
+
+import { initializeApp } 
+  from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+
+import {
+  getFirestore,
+  collection,
+  doc,
+  setDoc,
+  getDocs,
+  onSnapshot,
+  query,
+  orderBy
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+// ----------------------------
+// CONFIG FIREBASE
+// ----------------------------
+const firebaseConfig = {
+  apiKey: "AIzaSyANedM3dtDHdaD7a86mxDQeMc_-S7Q8gc8",
+  authDomain: "que-hago-mvp.firebaseapp.com",
+  projectId: "que-hago-mvp",
+  storageBucket: "que-hago-mvp.firebasestorage.app",
+  messagingSenderId: "1014152641904",
+  appId: "1:1014152641904:web:18b91bb72b7564eb94e3b5"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const planesRef = collection(db, "planes");
+
+// ----------------------------
+// ID determinista
+// ----------------------------
+function generatePlanId(plan) {
+  const base = `${plan.titulo}__${plan.fecha}__${plan.ciudad}__${plan.provincia}`.toLowerCase();
+  let hash = 5381;
+  for (let i = 0; i < base.length; i++) {
+    hash = (hash * 33) ^ base.charCodeAt(i);
+  }
+  return String(Math.abs(hash)).slice(0, 20);
+}
+
+// ----------------------------
+// Añadir plan SIN duplicados
+// ----------------------------
+export async function addPlanToApi(plan) {
+  const id = generatePlanId(plan);
+  const docRef = doc(planesRef, id);
+
+  await setDoc(docRef, {
+    ...plan,
+    createdAt: plan.createdAt || new Date().toISOString()
+  });
+
+  return id;
+}
+
+// ----------------------------
+// Obtener planes
+// ----------------------------
+export async function getAllPlanes() {
+  const q = query(planesRef, orderBy("fecha", "asc"));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+// ----------------------------
+// Listener realtime
+// ----------------------------
+export function subscribeToPlanes(callback) {
+  return onSnapshot(planesRef, (snapshot) => {
+    const docs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    callback(docs);
+  });
+}
+
