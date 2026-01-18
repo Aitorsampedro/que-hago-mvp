@@ -1,248 +1,176 @@
-/* --------------------------------------
-   TIPOGRAFÍA CORPORATE
---------------------------------------- */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-:root {
-  --color-primary: #005745;           /* Aston Martin Racing Green */
-  --color-primary-dark: #003F33;      /* Header corporate */
-  --color-primary-light: #0A7A65;     /* Accent */
-  --color-bg: #EEF1F2;                /* Gris premium corporativo */
-  --color-bg-alt: #F5F7F8;
-  --color-card: #FFFFFF;
-  --color-text: #1F2937;
-  --color-text-soft: #6B7280;
-  --color-border: #D1D5DB;
-}
-
-/* --------------------------------------
-   GENERAL
---------------------------------------- */
-* {
-  box-sizing: border-box;
-}
+/* =========================================
+   TIPOGRAFÍA Y BASE
+========================================= */
 
 body {
+  font-family: "Inter", system-ui, sans-serif;
+  background: #f8f9f8;
   margin: 0;
-  background: var(--color-bg);
-  font-family: 'Inter', sans-serif;
-  color: var(--color-text);
-  line-height: 1.5;
+  color: #1f2933;
 }
 
-/* --------------------------------------
-   HEADER CORPORATE PREMIUM
---------------------------------------- */
+h1, h2, h3 {
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+/* Contenedor general */
+.container {
+  max-width: 1100px;
+  margin: 2.5rem auto;
+  padding: 0 1rem;
+}
+
+
+/* =========================================
+   HEADER
+========================================= */
+
 header {
-  background: var(--color-primary-dark);
+  background: #003F33; /* verde corporativo oscuro */
   color: white;
-  padding: 1.6rem 2rem;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+  padding: 1.3rem 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 header .logo {
   display: flex;
+  gap: .5rem;
   align-items: center;
-  gap: .6rem;
 }
 
 header .logo-text {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: white;
-}
-
-
-header h1 {
-  margin: 0;
-  font-size: 2rem;
+  font-size: 1.6rem;
   font-weight: 700;
 }
 
-header .sub {
-  margin-top: 0.4rem;
-  font-size: 1rem;
+.sub {
+  margin-top: .2rem;
   opacity: 0.85;
+  font-size: .9rem;
 }
 
-/* --------------------------------------
-   CONTENEDOR PRINCIPAL
---------------------------------------- */
-.container {
-  max-width: 1100px;
-  margin: 2rem auto;
-  padding: 0 1rem;
+
+/* =========================================
+   CAJAS / TARJETAS / FORMULARIOS
+========================================= */
+
+.card, form {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 1.4rem;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.06);
+  border: 1px solid #e6e6e6;
 }
 
-.grid-2 {
-  display: grid;
-  gap: 2rem;
-}
-
-@media (min-width: 900px) {
-  .grid-2 {
-    grid-template-columns: 1.25fr 0.75fr;
-  }
-}
-
-/* --------------------------------------
-   FORMULARIO CORPORATE
---------------------------------------- */
-form {
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  padding: 1.7rem;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
-}
-
+/* Inputs modernos */
 input, textarea, select {
   width: 100%;
-  padding: 0.9rem;
-  margin-bottom: 1.1rem;
+  padding: .8rem .9rem;
   border-radius: 10px;
-  border: 1px solid var(--color-border);
   font-size: 1rem;
-  font-family: 'Inter', sans-serif;    /* ← Soluciona el estilo anticuado */
-  transition: border 0.25s ease, background 0.25s ease;
-  background: var(--color-bg-alt);
-  line-height: 1.5;                    /* ← Mejora lectura en textarea */
+  border: 1px solid #cfd7d2;
+  outline: none;
+  transition: border .15s ease, box-shadow .15s ease;
 }
 
 input:focus, textarea:focus, select:focus {
-  border-color: var(--color-primary);
-  background: #FFFFFF;
-  outline: none;
+  border-color: #005745;
+  box-shadow: 0 0 0 2px rgba(0, 87, 69, 0.2);
 }
 
-/* BOTÓN CORPORATE */
+/* Botones premium */
 button {
-  width: 100%;
-  background: var(--color-primary);
+  background: #005745;
   color: white;
+  padding: .75rem 1.3rem;
   border: none;
-  padding: 0.9rem 1.2rem;
-  font-size: 1.05rem;
-  border-radius: 14px;
   cursor: pointer;
+  border-radius: 10px;
+  font-size: 1rem;
   font-weight: 600;
-  letter-spacing: 0.3px;
-  transition: background 0.25s ease, transform 0.15s;
+  transition: background .2s, transform .1s;
 }
 
 button:hover {
-  background: var(--color-primary-light);
+  background: #00765d;
 }
 
 button:active {
-  transform: scale(0.97);
+  transform: scale(0.98);
 }
 
-/* --------------------------------------
-   PROMO BOX
---------------------------------------- */
-.ad-slot {
-  margin-top: 1.4rem;
-  padding: 1rem;
-  border: 1px dashed var(--color-primary);
-  border-radius: 14px;
-  background: rgba(0, 87, 69, 0.06);
-  color: var(--color-primary);
-  font-size: 0.95rem;
-}
 
-/* --------------------------------------
+/* =========================================
    LISTA DE PLANES
---------------------------------------- */
+========================================= */
+
 .plan-list {
   display: grid;
-  gap: 1.4rem;
+  gap: 1.2rem;
+  margin-top: 1.5rem;
 }
 
-/* CARD CORPORATE */
 .plan {
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: 18px;
-  padding: 1.4rem;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.10);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.plan:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 22px rgba(0,0,0,0.15);
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 1.2rem;
+  border: 1px solid #e4e4e4;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.05);
 }
 
 .plan h3 {
   margin-top: 0;
-  font-size: 1.35rem;
-  font-weight: 600;
+  margin-bottom: .4rem;
+  font-size: 1.25rem;
 }
 
-/* Descripción */
-.plan-description {
-  color: var(--color-text-soft);
-  margin: 0.5rem 0 1rem;
-}
-
-/* BADGES */
 .badge {
   display: inline-block;
-  padding: 0.3rem 0.55rem;
-  font-size: 0.75rem;
-  border-radius: 8px;
-  font-weight: 600;
-  margin-right: 0.4rem;
-  background: var(--color-primary);
-  color: white;
+  padding: .3rem .6rem;
+  font-size: .75rem;
+  background: #e8f2ef;
+  color: #005745;
+  border-radius: 6px;
+  margin-right: .4rem;
 }
 
-.badge-people {
-  background: var(--color-primary-light);
+.plan-description {
+  margin: .4rem 0 .6rem;
+  line-height: 1.45;
 }
 
-/* BOTÓN UNIRSE */
-.btn-join {
-  display: inline-block;
-  margin-top: 0.8rem;
-  background: var(--color-primary-dark);
-  color: white;
-  padding: 0.75rem 1.2rem;
-  border-radius: 14px;
-  text-decoration: none;
-  font-size: 0.95rem;
-  font-weight: 600;
-  transition: background 0.2s;
+/* Botón “Unirme” dentro de la tarjeta */
+.plan a button {
+  width: 100%;
+  margin-top: .6rem;
 }
 
-.btn-join:hover {
-  background: var(--color-primary);
-}
 
-/* --------------------------------------
+/* =========================================
    FILTROS
---------------------------------------- */
+========================================= */
+
 .filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
+  gap: .7rem;
   margin-bottom: 1.2rem;
 }
 
-/* --------------------------------------
-   EMPTY STATE
---------------------------------------- */
-#empty-state {
-  text-align: center;
-  padding: 1.5rem 0;
-  font-size: 1rem;
-  color: var(--color-text-soft);
+#filtro-busqueda {
+  flex: 1;
 }
-/* ===== FOOTER PREMIUM ===== */
+
+
+/* =========================================
+   FOOTER PREMIUM
+========================================= */
 
 .footer {
-  background: #003F33; /* Verde profundo corporativo */
+  background: #003F33;
   padding: 2.5rem 1rem;
   margin-top: 4rem;
   color: #ffffff;
@@ -274,14 +202,9 @@ button:active {
 }
 
 .footer-links a {
-  color: #d4e6de;
+  color: #d5e8e2;
   font-size: .95rem;
   text-decoration: none;
-  transition: opacity .2s;
-}
-
-.footer-links a:hover {
-  opacity: .65;
 }
 
 .footer-copy {
