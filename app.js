@@ -1,4 +1,4 @@
-// app.js – versión con tiempo real estable
+// app.js – versión limpia y corregida con validación de enlaces y tiempo real
 
 import {
   getAllPlanes,
@@ -42,7 +42,7 @@ const DEFAULT_PLANS = [
 let plans = [];
 let unsubscribeFromRealtime = null;
 
-// ===== Utils =====
+// -------------------- UTILIDADES --------------------
 
 function tryParseInt(value, fallback = null) {
   const n = parseInt(value, 10);
@@ -79,7 +79,7 @@ function sortPlans(list) {
   });
 }
 
-// ===== localStorage solo para modo local (por si lo usas en el futuro) =====
+// -------------------- Form LocalStorage --------------------
 
 function loadFromStorage() {
   try {
@@ -111,7 +111,7 @@ function saveToStorage(plansList) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(clean));
 }
 
-// ===== WhatsApp =====
+// -------------------- WhatsApp Share --------------------
 
 function buildWhatsAppMessage(plan) {
   const fechaText = plan.fecha || "Fecha por concretar";
@@ -144,7 +144,7 @@ function sharePlanByWhatsApp(plan) {
   window.open(`https://wa.me/?text=${text}`, "_blank", "noopener,noreferrer");
 }
 
-// ===== DOM principal =====
+// -------------------- DOM Principal --------------------
 
 document.addEventListener("DOMContentLoaded", () => {
   const body = document.body;
@@ -185,7 +185,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (inputFecha) inputFecha.min = today;
   if (filtroFecha) filtroFecha.min = today;
 
-  // ===== Render =====
+  // -------------------- RENDER --------------------
 
   function renderPlans(filtered) {
     list.innerHTML = "";
@@ -266,57 +266,31 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ===== Filtros =====
+  // -------------------- FILTROS --------------------
 
   function applyFilters() {
-  const provSel = filtroProvincia?.value || "todas";
-  const fechaSel = filtroFecha?.value || "";
-  const text = (filtroBusqueda?.value || "").trim().toLowerCase();
+    const provSel = filtroProvincia?.value || "todas";
+    const fechaSel = filtroFecha?.value || "";
+    const text = (filtroBusqueda?.value || "").trim().toLowerCase();
 
-  // Hoy a las 00:00, para comparar solo por día
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayMs = today.getTime();
+    const today = new Date().toISOString().slice(0, 10);
 
-  const filtered = plans.filter((p) => {
-    // 1) Ocultar planes con fecha pasada (solo si la fecha es válida)
-    if (p.fecha) {
-      const planDate = new Date(p.fecha);
-      if (!Number.isNaN(planDate.getTime())) {
-        planDate.setHours(0, 0, 0, 0);
-        const planMs = planDate.getTime();
-        if (planMs < todayMs) return false;
+    const filtered = plans.filter((p) => {
+      if (p.fecha && p.fecha < today) return false;
+      if (provSel !== "todas" && p.provincia !== provSel) return false;
+      if (fechaSel && p.fecha !== fechaSel) return false;
+
+      if (text) {
+        const haystack =
+          `${p.titulo} ${p.descripcion} ${p.provincia} ${p.ciudad}`.toLowerCase();
+        if (!haystack.includes(text)) return false;
       }
-    }
 
-    // 2) Filtro por provincia
-    if (provSel !== "todas" && p.provincia !== provSel) return false;
+      return true;
+    });
 
-    // 3) Filtro por fecha exacta seleccionada en el filtro
-    if (fechaSel && p.fecha !== fechaSel) return false;
-
-    // 4) Búsqueda por texto
-    if (text) {
-      const haystack = [
-        p.titulo,
-        p.descripcion,
-        p.provincia,
-        p.ciudad,
-        p.fecha,
-      ]
-        .join(" ")
-        .toLowerCase();
-      if (!haystack.includes(text)) return false;
-    }
-
-    return true;
-  });
-
-  renderPlans(filtered);
-}
-
-
-
+    renderPlans(filtered);
+  }
 
   function resetFilters() {
     if (filtroProvincia) filtroProvincia.value = "todas";
@@ -325,7 +299,7 @@ document.addEventListener("DOMContentLoaded", () => {
     applyFilters();
   }
 
-  // ===== Mensajes formulario =====
+  // -------------------- FORM MESSAGES --------------------
 
   function clearFormMessages() {
     if (formError) {
@@ -358,7 +332,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // ===== Crear plan =====
+  // -------------------- CREAR PLAN --------------------
 
   async function handleCreatePlan(e) {
     e.preventDefault();
@@ -388,36 +362,32 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const url = raw.enlace.trim();
+    // -------- VALIDACIÓN DE ENLACES (CORREGIDO) --------
+    let url = (raw.enlace || "").trim();
 
-// Normalizar enlace
-let url = (raw.enlace || "").trim();
+    // Añadir https si falta
+    if (!/^https?:\/\//i.test(url)) {
+      url = `https://${url}`;
+    }
 
-// Si el usuario pone "chat.whatsapp.com/xxxx" sin https
-if (!/^https?:\/\//i.test(url)) {
-  url = `https://${url}`;
-}
+    // Validación WhatsApp / Telegram
+    const isWhatsApp =
+      url.startsWith("https://wa.me/") ||
+      url.startsWith("https://chat.whatsapp.com/");
 
-// Validar: SOLO WhatsApp o Telegram
-const isWhatsApp =
-  url.startsWith("https://wa.me/") ||
-  url.startsWith("https://chat.whatsapp.com/");
+    const isTelegram =
+      url.startsWith("https://t.me/") ||
+      url.startsWith("https://telegram.me/");
 
-const isTelegram =
-  url.startsWith("https://t.me/") ||
-  url.startsWith("https://telegram.me/");
+    if (!isWhatsApp && !isTelegram) {
+      showError(
+        "El enlace debe ser de WhatsApp o Telegram (wa.me, chat.whatsapp.com, t.me)."
+      );
+      return;
+    }
 
-if (!isWhatsApp && !isTelegram) {
-  showError("El enlace debe ser de WhatsApp o Telegram (wa.me, chat.whatsapp.com, t.me).");
-  return; // <-- ESTO es lo que evita que se cree el plan
-}
-
-// Guardar el enlace ya validado
-raw.enlace = url;
-if (form) {
-  form.addEventListener("submit", handleCreatePlan);
-}
-
+    raw.enlace = url;
+    // ---------------------------------------------------
 
     const newPlan = normalizePlan({
       ...raw,
@@ -430,7 +400,7 @@ if (form) {
         const newId = await addPlanToApi(newPlan);
         newPlan.id = newId;
         if (apiStatus) apiStatus.textContent = "Plan guardado en la nube.";
-        // No hace falta meterlo a mano en `plans`: onSnapshot lo traerá solo
+        // Tiempo real actualiza automáticamente
       } else {
         plans.unshift(newPlan);
         saveToStorage(plans);
@@ -447,7 +417,7 @@ if (form) {
     }
   }
 
-  // ===== Recargar manual (por si acaso) =====
+  // -------------------- RECARGA MANUAL --------------------
 
   async function reloadFromApi() {
     if (!apiStatus) return;
@@ -465,7 +435,7 @@ if (form) {
     }
   }
 
-  // ===== Init (incluye tiempo real) =====
+  // -------------------- INIT --------------------
 
   (async function init() {
     if (apiMode) {
@@ -492,7 +462,7 @@ if (form) {
     }
   })();
 
-  // ===== Listeners =====
+  // -------------------- LISTENERS --------------------
 
   if (form) form.addEventListener("submit", handleCreatePlan);
   if (filtroProvincia) filtroProvincia.addEventListener("change", applyFilters);
@@ -505,7 +475,9 @@ if (form) {
       if (apiMode) reloadFromApi();
       else {
         const storedAgain = loadFromStorage();
-        plans = storedAgain.length ? storedAgain : DEFAULT_PLANS.map(normalizePlan);
+        plans = storedAgain.length
+          ? storedAgain
+          : DEFAULT_PLANS.map(normalizePlan);
         plans = sortPlans(plans);
         if (apiStatus)
           apiStatus.textContent = "Datos recargados desde almacenamiento local.";
