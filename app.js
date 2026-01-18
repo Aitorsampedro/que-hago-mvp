@@ -1,10 +1,6 @@
 // app.js — versión final optimizada + IDs deterministas
+import { getAllPlanes, addPlanToApi, subscribeToPlanes } from "/firebase-config.js";
 
-import {
-  getAllPlanes,
-  addPlanToApi,
-  subscribeToPlanes
-} from "./firebase-config.js";
 
 // ----------------------------
 // Variables globales
