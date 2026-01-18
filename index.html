@@ -4,192 +4,101 @@
   <meta charset="UTF-8" />
   <title>Qué hago? – Planes en Galicia</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <!-- Meta básica -->
-  <meta name="description" content="Encuentra o crea planes reales en Galicia: rutas, cine, aventuras, quedadas y mucho más. Todo organizado por gente como tú." />
-
-  <!-- CSS -->
   <link rel="stylesheet" href="styles.css" />
 </head>
 
-<body data-api-mode="api" data-api-source="firebase">
-  <header class="site-header">
-    <div class="container">
-      <h1 class="site-title">Qué hago? – Galicia</h1>
-      <p class="site-subtitle">
-        Planes creados por gente como tú en A Coruña, Lugo, Ourense y Pontevedra.
-      </p>
-    </div>
+<body>
+  <!-- HEADER PREMIUM -->
+  <header>
+    <h1>Qué hago?</h1>
+    <p class="sub">Descubre y únete a planes creados por gente como tú.</p>
   </header>
 
-  <main class="site-main">
-    <div class="container layout-grid">
+  <div class="container grid-2">
 
-      <!-- Crear plan -->
-      <section class="create-plan" aria-labelledby="create-plan-title">
-        <h2 id="create-plan-title">Crear un plan</h2>
+    <!-- COLUMNA IZQUIERDA – CREAR PLAN -->
+    <div>
+      <h2 style="margin-bottom: 1rem;">Crear un plan</h2>
 
-        <form id="plan-form" novalidate>
-          <div class="form-group">
-            <label for="titulo">Título del plan *</label>
-            <input type="text" id="titulo" placeholder="Ej: Puenting en el río Miño" required />
-          </div>
+      <form id="plan-form">
+        <input type="text" id="titulo" placeholder="Título del plan (ej: Paddle en Ares)" required />
+        <textarea id="descripcion" placeholder="Describe el plan: precio, punto de encuentro, nivel..." required></textarea>
 
-          <div class="form-group">
-            <label for="descripcion">Descripción *</label>
-            <textarea id="descripcion" rows="4" placeholder="Describe el plan, punto de encuentro, material necesario..." required></textarea>
-          </div>
+        <select id="provincia" required>
+          <option value="">Provincia</option>
+          <option value="A Coruña">A Coruña</option>
+          <option value="Lugo">Lugo</option>
+          <option value="Ourense">Ourense</option>
+          <option value="Pontevedra">Pontevedra</option>
+        </select>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label for="provincia">Provincia *</label>
-              <select id="provincia" required>
-                <option value="">Provincia</option>
-                <option value="A Coruña">A Coruña</option>
-                <option value="Lugo">Lugo</option>
-                <option value="Ourense">Ourense</option>
-                <option value="Pontevedra">Pontevedra</option>
-              </select>
-            </div>
+        <input type="text" id="ciudad" placeholder="Ciudad / punto exacto" required />
+        <input type="date" id="fecha" required />
+        <input type="time" id="hora" placeholder="Hora del plan" />
 
-            <div class="form-group">
-              <label for="ciudad">Ciudad / pueblo *</label>
-              <input type="text" id="ciudad" placeholder="Ej: Pontedeume, Vigo centro..." required />
-            </div>
-          </div>
+        <input type="number" id="minimo" placeholder="Personas mínimas" />
+        <input type="number" id="maximo" placeholder="Personas máximas" />
 
-          <div class="form-row">
-            <div class="form-group">
-              <label for="fecha">Fecha del plan *</label>
-              <input type="date" id="fecha" required />
-            </div>
+        <input type="url" id="enlace" placeholder="Enlace del grupo (WhatsApp / Telegram)" required />
 
-            <div class="form-group">
-              <label for="hora">Hora aproximada</label>
-              <input type="time" id="hora" />
-            </div>
-          </div>
+        <button type="submit">Publicar plan</button>
+      </form>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label for="minimo">Personas mínimas *</label>
-              <input type="number" id="minimo" min="1" step="1" placeholder="2" required />
-            </div>
-
-            <div class="form-group">
-              <label for="maximo">Personas máximas *</label>
-              <input type="number" id="maximo" min="1" step="1" placeholder="6" required />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="enlace">Enlace del grupo (WhatsApp / Telegram) *</label>
-            <input type="url" id="enlace" placeholder="Pega el enlace de invitación" required />
-            <p class="field-hint">
-              Crea un grupo en WhatsApp o Telegram y pega aquí el enlace de invitación.
-            </p>
-          </div>
-
-          <div class="form-actions">
-            <button type="submit" id="btn-publicar-plan" class="btn-primary">Publicar plan</button>
-          </div>
-
-          <div id="form-error" class="form-error"></div>
-          <div id="form-success" class="form-success"></div>
-        </form>
-
-        <aside class="ad-slot">
-          <h3 class="ad-title">Espacio para promociones</h3>
-          <p>Pronto podrás ver aquí planes destacados y actividades recomendadas.</p>
-        </aside>
-      </section>
-
-      <!-- Lista de planes -->
-      <section class="plans-section" aria-labelledby="plans-section-title">
-        <div class="plans-header">
-          <div>
-            <h2 id="plans-section-title">Planes publicados</h2>
-            <p id="results-count" class="results-count">Cargando planes...</p>
-          </div>
-          <button type="button" id="btn-recargar" class="btn-ghost">Recargar desde la API</button>
-        </div>
-
-        <div class="filters">
-          <div class="form-group">
-            <label for="filtro-provincia">Provincia</label>
-            <select id="filtro-provincia">
-              <option value="todas">Todas las provincias</option>
-              <option value="A Coruña">A Coruña</option>
-              <option value="Lugo">Lugo</option>
-              <option value="Ourense">Ourense</option>
-              <option value="Pontevedra">Pontevedra</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="filtro-fecha">Fecha</label>
-            <input type="date" id="filtro-fecha" />
-          </div>
-
-          <div class="form-group">
-            <label for="filtro-busqueda">Buscar por texto</label>
-            <input type="text" id="filtro-busqueda" placeholder="Ej: ruta, cine, surf..." />
-          </div>
-
-          <button type="button" id="btn-limpiar-filtros" class="btn-secondary">Limpiar</button>
-        </div>
-
-        <div id="plan-list" class="plan-list"></div>
-
-        <template id="plan-card-template">
-          <article class="plan" data-plan-id="">
-            <header class="plan-header">
-              <div>
-                <h3 class="plan-title"></h3>
-                <p class="plan-location">
-                  <span class="badge badge-province"></span>
-                  <span class="badge badge-city"></span>
-                </p>
-              </div>
-              <p class="plan-people"><span class="badge badge-people"></span></p>
-            </header>
-
-            <p class="plan-description"></p>
-            <p class="plan-meta">
-              <span class="plan-date"></span>
-              <span class="plan-time"></span>
-            </p>
-
-            <div class="plan-actions">
-              <a class="btn-primary btn-join" href="#" target="_blank">Unirme al grupo</a>
-              <button type="button" class="btn-ghost btn-share">Compartir por WhatsApp</button>
-            </div>
-          </article>
-        </template>
-
-        <div id="empty-state" class="empty-state" hidden>
-          <p>No hay planes con esos filtros. Crea uno nuevo o ajusta la búsqueda.</p>
-        </div>
-
-        <div id="api-status" class="api-status"></div>
-      </section>
+      <div class="ad-slot">
+        Próximamente: ofertas, actividades premium y promos de aventura.
+      </div>
     </div>
-  </main>
 
-  <footer class="site-footer">
-    <div class="container">
-      <p>Qué hago? · MVP Galicia · v0.2</p>
+    <!-- COLUMNA DERECHA – PLANES -->
+    <div>
+      <h2 style="margin-bottom: 1rem;">Planes disponibles</h2>
+
+      <!-- FILTROS -->
+      <div class="filters" style="margin-bottom: 1.2rem;">
+        <select id="filtro-provincia">
+          <option value="todas">Todas las provincias</option>
+          <option value="A Coruña">A Coruña</option>
+          <option value="Lugo">Lugo</option>
+          <option value="Ourense">Ourense</option>
+          <option value="Pontevedra">Pontevedra</option>
+        </select>
+
+        <input type="date" id="filtro-fecha" />
+        <input type="text" id="filtro-busqueda" placeholder="Buscar plan..." />
+
+        <button id="btn-limpiar-filtros" style="margin-top: 0.5rem;">Limpiar filtros</button>
+      </div>
+
+      <!-- LISTA DE PLANES -->
+      <div id="plan-list" class="plan-list"></div>
+
+      <!-- EMPTY STATE -->
+      <p id="empty-state" hidden>No hay planes con estos filtros. ¡Sé el primero en crear uno!</p>
     </div>
-  </footer>
 
-  <!-- Carga de scripts (SOLO UNA VEZ) -->
- <script type="module" src="./firebase-config-v2.js"></script>
-<script type="module" src="./app.js"></script>
+  </div>
 
+  <!-- TEMPLATE CARD (NO TOCAR IDs) -->
+  <template id="plan-card-template">
+    <div class="plan">
+      <h3 class="plan-title"></h3>
+      <p class="plan-description"></p>
 
-  <!-- Cloudflare Analytics -->
-  <script defer src="https://static.cloudflareinsights.com/beacon.min.js"
-    data-cf-beacon='{"token":"cfc124a96bd847ac8dcf22cdea5e1255"}'></script>
+      <p>
+        <span class="badge badge-province"></span>
+        <span class="badge badge-city"></span>
+        <span class="badge badge-people"></span>
+      </p>
 
+      <p><strong>Fecha:</strong> <span class="plan-date"></span></p>
+      <p><strong>Hora:</strong> <span class="plan-time"></span></p>
+
+      <a class="btn-join" target="_blank">Unirme</a>
+    </div>
+  </template>
+
+  <!-- SCRIPTS -->
+  <script type="module" src="/firebase-config-v2.js"></script>
+  <script type="module" src="/app.js"></script>
 </body>
 </html>
